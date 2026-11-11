@@ -27,11 +27,12 @@ MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "
 SEGMENTOS = ["DISTRIBUIDOR", "CONSTRUCTORA", "INDUSTRIAL", "NO_IDENTIFICADO"]
 SEG_NOMBRE = {"DISTRIBUIDOR": "Distribuidor", "CONSTRUCTORA": "Constructora",
               "INDUSTRIAL": "Industrial", "NO_IDENTIFICADO": "No identificado"}
-# Una sola familia de color (vino y rosa). El segmento lo identifica el título de cada recuadro,
-# no el color: con una única tonalidad no hay tres matices distinguibles bajo daltonismo, y
-# generar tonos nuevos es justo lo que se debe evitar. "No identificado" va en tinta neutra.
-SEG_COLOR = {"DISTRIBUIDOR": "var(--s1)", "CONSTRUCTORA": "var(--s1)",
-             "INDUSTRIAL": "var(--s1)", "NO_IDENTIFICADO": "var(--ink2)"}
+# Color por entidad (no por posición): cada segmento conserva su color en todo el tablero.
+# Son tres tonos de una misma familia vino-rosa (vino, frambuesa y rosa claro) buscados y validados con
+# validate_palette.js en modo "todos los pares". "No identificado" no es una serie con identidad
+# propia: va en tinta neutra (de-énfasis).
+SEG_COLOR = {"DISTRIBUIDOR": "var(--s1)", "CONSTRUCTORA": "var(--s2)",
+             "INDUSTRIAL": "var(--s3)", "NO_IDENTIFICADO": "var(--ink2)"}
 
 # --- paleta vino y rosa -------------------------------------------------------------------------
 # Rampas generadas en OKLCH con matiz constante (H = 5) para que sean una sola familia, y validadas
@@ -39,14 +40,18 @@ SEG_COLOR = {"DISTRIBUIDOR": "var(--s1)", "CONSTRUCTORA": "var(--s1)",
 # contraste del extremo y tonalidad única; secuenciales: monotonía y tonalidad única).
 CLARO = {"page": "#fdf1f4", "surface": "#fffbfc", "ink": "#2b1720", "ink2": "#6a4b58", "muted": "#8a6c79",
          "grid": "#f1e0e6", "axis": "#dcc3cd", "border": "rgba(43,23,32,0.10)",
-         "s1": "#992d50",    # vino: datos (barras, líneas, minigráficos)
-         "pk": "#cf7188",    # rosa: total de referencia
-         "pkf": "#f3ccd3",   # rosa claro: relleno secundario
+         # trío categórico validado (todos los pares): CVD 16.1, visión normal 17.0; el rosa claro queda
+         # en 2.14:1 contra la superficie (aviso del validador) y se compensa con etiquetas y tabla gemela
+         "s1": "#9f2b4d",    # vino
+         "s2": "#ca55ac",    # frambuesa
+         "s3": "#ee96aa",    # rosa claro
+         "pkf": "#f3ccd3",   # rosa muy claro: relleno secundario (no es una serie)
          "q": ["#fadbe1", "#f1bec8", "#e99fb0", "#dc7d94", "#ca5677", "#ad385d", "#832543"],
          "o": ["#e99fb0", "#d97a91", "#c35775", "#a8375a", "#832543"]}
 OSCURO = {"page": "#130c0f", "surface": "#1d1317", "ink": "#f6e9ee", "ink2": "#cdb5be", "muted": "#a58d97",
           "grid": "#2e2026", "axis": "#43303a", "border": "rgba(255,255,255,0.10)",
-          "s1": "#e17a93", "pk": "#b05c71", "pkf": "#572f39",
+          # trío categórico validado (todos los pares): CVD 13.3, visión normal 17.0, los tres >= 3:1
+          "s1": "#c01c4c", "s2": "#b255bf", "s3": "#cb7a75", "pkf": "#572f39",
           # en oscuro "más" = más claro; lo bajo se acerca a la superficie
           "q": ["#4c252f", "#6b2e3e", "#903952", "#b54b69", "#d86383", "#ea89a1", "#f5b2c0"],
           "o": ["#82344a", "#a74662", "#c95d7b", "#e08097", "#f5a3b5"]}
@@ -228,6 +233,7 @@ def panel_linea(seg, meses, serie, total, resumen):
     Y = lambda v: mt + ph - ph * (v - lo) / (hi - lo)  # noqa: E731
     color = SEG_COLOR[seg]
     p = ['<svg viewBox="0 0 %d %d" role="img" aria-label="Porcentaje de toneladas a tiempo por mes, %s">' % (W, H, esc(SEG_NOMBRE[seg]))]
+    p.append('<circle cx="%d" cy="12" r="4.5" style="fill:%s"/>' % (ml - 12, color))
     p.append('<text x="%d" y="16" class="t-ink t-title">%s</text>' % (ml, esc(SEG_NOMBRE[seg])))
     p.append('<text x="%d" y="16" class="t-sec" text-anchor="end">%s</text>' % (W - mr + 32, esc(resumen)))
     for t in (50, 75, 100):
@@ -480,7 +486,7 @@ def construir(d):
 <section class="card" id="cumplimiento">
   <h2>Cumplimiento de entrega por segmento</h2>
   <p class="lead">%(lead_cum)s</p>
-  <div class="legend" aria-label="Leyenda"><span class="lg"><svg width="24" height="8" aria-hidden="true"><line x1="0" x2="24" y1="4" y2="4" class="ln" style="stroke:var(--s1)"/></svg>Segmento</span>
+  <div class="legend" aria-label="Leyenda"><span class="lg"><svg width="38" height="8" aria-hidden="true"><line x1="0" x2="10" y1="4" y2="4" class="ln" style="stroke:var(--s1)"/><line x1="14" x2="24" y1="4" y2="4" class="ln" style="stroke:var(--s2)"/><line x1="28" x2="38" y1="4" y2="4" class="ln" style="stroke:var(--s3)"/></svg>Segmento</span>
   <span class="lg"><svg width="24" height="8" aria-hidden="true"><line x1="0" x2="24" y1="4" y2="4" class="ln-total"/></svg>Total del mes</span>
   <span class="lg-note">Eje de 50 a 100 %% · «No identificado»: clientes fuera del maestro</span></div>
   <div class="grid2">%(paneles_c)s</div>
@@ -521,7 +527,7 @@ def construir(d):
 def _vars(p):
     v = ["--page:%s" % p["page"], "--surface:%s" % p["surface"], "--ink:%s" % p["ink"], "--ink2:%s" % p["ink2"],
          "--muted:%s" % p["muted"], "--grid:%s" % p["grid"], "--axis:%s" % p["axis"], "--border:%s" % p["border"],
-         "--s1:%s" % p["s1"], "--pk:%s" % p["pk"], "--pkf:%s" % p["pkf"]]
+         "--s1:%s" % p["s1"], "--s2:%s" % p["s2"], "--s3:%s" % p["s3"], "--pkf:%s" % p["pkf"]]
     for k, col in enumerate(p["q"]):
         v += ["--q%d:%s" % (k, col), "--qi%d:%s" % (k, tinta_sobre(col))]
     for k, col in enumerate(p["o"]):
@@ -585,7 +591,7 @@ svg text{font-family:inherit;font-size:11.5px;fill:var(--ink2)}
 .xh{stroke:var(--axis);stroke-width:1;opacity:0}
 .hit:hover .xh,.hit:focus .xh{opacity:1}
 .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.ln-total{fill:none;stroke:var(--pk);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ln-total{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
 .dot{stroke:var(--surface);stroke-width:2}
 .heat{max-width:760px}
 .hm{border-collapse:separate;border-spacing:2px;width:100%;table-layout:fixed}
@@ -601,7 +607,7 @@ svg text{font-family:inherit;font-size:11.5px;fill:var(--ink2)}
 .sc-step:first-child{border-radius:4px 0 0 4px}.sc-step:last-child{border-radius:0 4px 4px 0}
 .legend{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:center;margin:12px 0 4px;font-size:13px;color:var(--ink2)}
 .lg{display:inline-flex;align-items:center;gap:8px}
-.lg svg{width:24px;height:8px;flex:none;display:inline-block}
+.lg svg{width:auto;height:8px;flex:none;display:inline-block}
 .lg-note{color:var(--muted)}
 .funnel,.ranked{margin-top:6px}
 .fn-row{display:grid;grid-template-columns:minmax(180px,1.1fr) minmax(80px,1.6fr) 64px;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--grid)}
