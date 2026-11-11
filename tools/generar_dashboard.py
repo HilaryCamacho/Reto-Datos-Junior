@@ -27,25 +27,29 @@ MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "
 SEGMENTOS = ["DISTRIBUIDOR", "CONSTRUCTORA", "INDUSTRIAL", "NO_IDENTIFICADO"]
 SEG_NOMBRE = {"DISTRIBUIDOR": "Distribuidor", "CONSTRUCTORA": "Constructora",
               "INDUSTRIAL": "Industrial", "NO_IDENTIFICADO": "No identificado"}
-# Color por entidad (no por posición): cada segmento conserva su color en todo el tablero.
-# "No identificado" no es una serie con identidad propia: va en gris (de-énfasis).
-SEG_COLOR = {"DISTRIBUIDOR": "var(--s1)", "CONSTRUCTORA": "var(--s2)",
-             "INDUSTRIAL": "var(--s3)", "NO_IDENTIFICADO": "var(--muted)"}
+# Una sola familia de color (vino y rosa). El segmento lo identifica el título de cada recuadro,
+# no el color: con una única tonalidad no hay tres matices distinguibles bajo daltonismo, y
+# generar tonos nuevos es justo lo que se debe evitar. "No identificado" va en tinta neutra.
+SEG_COLOR = {"DISTRIBUIDOR": "var(--s1)", "CONSTRUCTORA": "var(--s1)",
+             "INDUSTRIAL": "var(--s1)", "NO_IDENTIFICADO": "var(--ink2)"}
 
-# --- paleta (referencia validada con validate_palette.js: ver README) --------------------------
-CLARO = {"page": "#f9f9f7", "surface": "#fcfcfb", "ink": "#0b0b0b", "ink2": "#52514e", "muted": "#898781",
-         "grid": "#e1e0d9", "axis": "#c3c2b7", "border": "rgba(11,11,11,0.10)", "good": "#006300",
-         "s1": "#2a78d6", "s2": "#eb6834", "s3": "#1baf7a",
-         # secuencial azul de menor a mayor valor (pasos 100,200,300,400,500,600,700)
-         "q": ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"],
-         # ordinal para el embudo (pasos 250,350,450,550,650)
-         "o": ["#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281"]}
-OSCURO = {"page": "#0d0d0d", "surface": "#1a1a19", "ink": "#f0efec", "ink2": "#c3c2b7", "muted": "#898781",
-          "grid": "#2c2c2a", "axis": "#383835", "border": "rgba(255,255,255,0.10)", "good": "#0ca30c",
-          "s1": "#3987e5", "s2": "#d95926", "s3": "#199e70",
+# --- paleta vino y rosa -------------------------------------------------------------------------
+# Rampas generadas en OKLCH con matiz constante (H = 5) para que sean una sola familia, y validadas
+# con validate_palette.js contra estas superficies (ordinales: monotonía, saltos de luminosidad,
+# contraste del extremo y tonalidad única; secuenciales: monotonía y tonalidad única).
+CLARO = {"page": "#fdf1f4", "surface": "#fffbfc", "ink": "#2b1720", "ink2": "#6a4b58", "muted": "#8a6c79",
+         "grid": "#f1e0e6", "axis": "#dcc3cd", "border": "rgba(43,23,32,0.10)",
+         "s1": "#992d50",    # vino: datos (barras, líneas, minigráficos)
+         "pk": "#cf7188",    # rosa: total de referencia
+         "pkf": "#f3ccd3",   # rosa claro: relleno secundario
+         "q": ["#fadbe1", "#f1bec8", "#e99fb0", "#dc7d94", "#ca5677", "#ad385d", "#832543"],
+         "o": ["#e99fb0", "#d97a91", "#c35775", "#a8375a", "#832543"]}
+OSCURO = {"page": "#130c0f", "surface": "#1d1317", "ink": "#f6e9ee", "ink2": "#cdb5be", "muted": "#a58d97",
+          "grid": "#2e2026", "axis": "#43303a", "border": "rgba(255,255,255,0.10)",
+          "s1": "#e17a93", "pk": "#b05c71", "pkf": "#572f39",
           # en oscuro "más" = más claro; lo bajo se acerca a la superficie
-          "q": ["#0d366b", "#104281", "#184f95", "#256abf", "#3987e5", "#6da7ec", "#9ec5f4"],
-          "o": ["#184f95", "#256abf", "#3987e5", "#6da7ec", "#9ec5f4"]}
+          "q": ["#4c252f", "#6b2e3e", "#903952", "#b54b69", "#d86383", "#ea89a1", "#f5b2c0"],
+          "o": ["#82344a", "#a74662", "#c95d7b", "#e08097", "#f5a3b5"]}
 
 
 # --- utilidades ---------------------------------------------------------------------------------
@@ -280,35 +284,35 @@ def filas_impacto(imp):
     h09_t = sum(r["toneladas"] for r in h09)
     pct = lambda a, b: 100.0 * a / b  # noqa: E731
     filas = [
-        ("H01", "No quedarse con la última versión de cada viaje", pct(h01["viajes_ingenuo"] - V, V),
+        ("H01", "Sin quedarse con la última versión", pct(h01["viajes_ingenuo"] - V, V),
          "+%s %% viajes (%s → %s)" % (n1(pct(h01["viajes_ingenuo"] - V, V)), n0(V), n0(h01["viajes_ingenuo"]))),
-        ("H08", "Sumar el flete después de unir con las partidas", h08["sobreestimacion_pct"],
+        ("H08", "Flete sumado tras unir con partidas", h08["sobreestimacion_pct"],
          "+%s %% flete (%s → %s M MXN)" % (n1(h08["sobreestimacion_pct"]), n1(F / 1e6), n1(h08["costo_ingenuo"] / 1e6))),
-        ("H11", "Comparar timestamps en vez de fechas (a tiempo)", abs(pct(h11["pct_ton_ingenuo"] - h11["pct_ton_correcto"], h11["pct_ton_correcto"])),
+        ("H11", "Timestamps en vez de fechas", abs(pct(h11["pct_ton_ingenuo"] - h11["pct_ton_correcto"], h11["pct_ton_correcto"])),
          "−%s %% a tiempo (%s → %s %%)" % (n1(abs(pct(h11["pct_ton_ingenuo"] - h11["pct_ton_correcto"], h11["pct_ton_correcto"]))),
                                           n1(h11["pct_ton_correcto"]), n1(h11["pct_ton_ingenuo"]))),
-        ("H05", "No limpiar la fecha centinela 1900-01-01", pct(h05["toneladas"], T),
+        ("H05", "Fecha centinela 1900-01-01", pct(h05["toneladas"], T),
          "%s %% de t (%s t caen en el mes 1900-01)" % (n1(pct(h05["toneladas"], T)), n0(h05["toneladas"]))),
-        ("H04", "No normalizar el estatus (ENT, ent, ' ENT')", pct(h04["viajes_perdidos"], V),
+        ("H04", "Estatus sin normalizar", pct(h04["viajes_perdidos"], V),
          "−%s %% viajes (%s perdidos)" % (n1(pct(h04["viajes_perdidos"], V)), n0(h04["viajes_perdidos"]))),
-        ("H14", "No normalizar el texto del segmento", pct(h14["toneladas_con_categoria_falsa"], T),
+        ("H14", "Texto del segmento sin normalizar", pct(h14["toneladas_con_categoria_falsa"], T),
          "%s %% de t (%s t en una categoría falsa)" % (n1(pct(h14["toneladas_con_categoria_falsa"], T)), n0(h14["toneladas_con_categoria_falsa"]))),
-        ("H12", "Usar el segmento actual y no el vigente", pct(h12_t, T),
+        ("H12", "Segmento actual en vez del vigente", pct(h12_t, T),
          "%s %% de t (%s t en el segmento equivocado)" % (n1(pct(h12_t, T)), n0(h12_t))),
-        ("H09", "No filtrar viajes programados y cancelados", pct(h09_t, T),
+        ("H09", "Viajes programados y cancelados", pct(h09_t, T),
          "+%s %% de t (%s t que nunca salieron)" % (n1(pct(h09_t, T)), n0(h09_t))),
-        ("H13", "Descartar clientes que no están en el maestro", pct(h13["toneladas_no_identificado_embarcadas"], T),
+        ("H13", "Clientes fuera del maestro descartados", pct(h13["toneladas_no_identificado_embarcadas"], T),
          "−%s %% de t (%s t perdidas)" % (n1(pct(h13["toneladas_no_identificado_embarcadas"], T)), n0(h13["toneladas_no_identificado_embarcadas"]))),
-        ("H15", "Usar una versión vieja del costo del flete", pct(h15["diferencia_mxn"], F),
+        ("H15", "Costo de flete de versión vieja", pct(h15["diferencia_mxn"], F),
          "%s %% del flete (%s mil MXN)" % (n1(pct(h15["diferencia_mxn"], F)), n0(h15["diferencia_mxn"] / 1000))),
-        ("H03", "No excluir los viajes borrados en el origen", pct(h03["toneladas"], T),
+        ("H03", "Viajes borrados sin excluir", pct(h03["toneladas"], T),
          "+%s %% de t (%s viajes que ya no existen)" % (n1(pct(h03["toneladas"], T)), n0(h03["viajes"]))),
-        ("H07", "Elegir la fecha final en vez de la real", pct(h07_t, T),
+        ("H07", "Fecha final en vez de la real", pct(h07_t, T),
          "%s %% de t (%s t en el mes equivocado)" % (n2(pct(h07_t, T)), n0(h07_t))),
-        ("H10", "Quedarse con la primera versión del POD", abs(pct(h10["pct_primera_version"] - h10["pct_correcto"], h10["pct_correcto"])),
+        ("H10", "Primera versión del POD", abs(pct(h10["pct_primera_version"] - h10["pct_correcto"], h10["pct_correcto"])),
          "%s %% a tiempo (%s viajes cambian)" % (n2(abs(pct(h10["pct_primera_version"] - h10["pct_correcto"], h10["pct_correcto"]))),
                                                  n0(h10["corrigen_la_clasificacion"]))),
-        ("H16", "Usar una versión vieja del peso de las partidas", pct(h16["diferencia_ton"], T),
+        ("H16", "Peso de versión vieja", pct(h16["diferencia_ton"], T),
          "<0.01 %% de t (%s t)" % n1(h16["diferencia_ton"])),
     ]
     return sorted(filas, key=lambda f: -f[2])
@@ -362,16 +366,16 @@ def construir(d):
     hero = ('<div class="hero"><div class="lab">Toneladas entregadas a tiempo</div>'
             '<div class="hero-num">%s<span class="hero-unit"> %%</span></div>'
             '<div class="seg-bar" role="img" aria-label="%s t a tiempo y %s t tarde"><span style="width:%s%%;background:var(--s1)"></span>'
-            '<span style="width:%s%%;background:var(--axis)"></span></div>'
+            '<span style="width:%s%%;background:var(--pkf)"></span></div>'
             '<div class="hero-sub"><span class="key key-fill" style="background:var(--s1)"></span>A tiempo <b>%s t</b>'
-            '<span class="key key-fill" style="background:var(--axis)"></span>Tarde <b>%s t</b></div>'
-            '<div class="hero-foot">Sobre %s t entregadas con comprobante (POD), por mes de embarque, %s.</div></div>'
-            % (n1(pct_global), n0(atiempo), n0(tarde), c1(pct_global), c1(100 - pct_global), n0(atiempo), n0(tarde), n0(entreg), esc(periodo)))
+            '<span class="key key-fill" style="background:var(--pkf)"></span>Tarde <b>%s t</b></div>'
+            '<div class="hero-foot">de %s t entregadas con comprobante</div></div>'
+            % (n1(pct_global), n0(atiempo), n0(tarde), c1(pct_global), c1(100 - pct_global), n0(atiempo), n0(tarde), n0(entreg)))
     tiles = "".join([
         tile("Viajes embarcados", n0(viajes), "%s a %s por mes" % (n0(min(m_viajes)), n0(max(m_viajes))), m_viajes),
         tile("Toneladas embarcadas", n0(ton) + " t", "%s a %s t por mes" % (n0(min(m_ton)), n0(max(m_ton))), m_ton),
-        tile("Flete total", "$%s M" % n1(flete / 1e6), "MXN, un monto por viaje", m_flete),
-        tile("Flete por tonelada", "$%s" % n0(cpt_prom), "MXN/t, de $%s a $%s por mes" % (n0(min(m_cpt)), n0(max(m_cpt))), m_cpt),
+        tile("Flete total", "$%s M" % n1(flete / 1e6), "MXN", m_flete),
+        tile("Flete por tonelada", "$%s" % n0(cpt_prom), "MXN por tonelada", m_cpt),
         tile("Sin segmento identificado", "%s t" % n0(noid_t), "%s %% de lo entregado" % n1(100.0 * noid_t / entreg), m_noid),
     ])
 
@@ -380,35 +384,30 @@ def construir(d):
     paneles_t = "".join('<div class="panel">%s</div>' % panel_toneladas(
         nom, [por_mp[(m, cla)] for m in meses if (m, cla) in por_mp], ymax, tons_planta[cla]) for cla, nom in plantas)
     calor = mapa_calor(plantas, meses, por_mp, cpt_lo, cpt_hi)
-    tabla_emb = detalle("Ver la tabla embarques_mensual (24 filas)", tabla_html(
+    tabla_emb = detalle("Ver tabla", tabla_html(
         ["Mes", "Planta", "Viajes", "Toneladas", "Flete MXN", "Flete por t"],
         [(f["anio_mes"], f["nom_planta"], n0(f["num_viajes"]), n1(f["toneladas_embarcadas"]), n2(f["costo_flete_mxn"]),
           n2(f["costo_flete_por_ton"])) for f in emb], ["", "", "num", "num", "num", "num"]))
-    lead_emb = ("%s concentra %s %% de las toneladas del semestre. El flete por tonelada es muy estable: va de $%s a $%s "
-                "(±%s %% alrededor de $%s), así que las diferencias entre plantas y meses son pequeñas."
-                % (top[1], n0(100.0 * tons_planta[top[0]] / ton), n0(cpt_lo), n0(cpt_hi),
-                   n1(100.0 * (cpt_hi - cpt_lo) / 2 / cpt_prom), n0(cpt_prom)))
+    lead_emb = ("%s aporta el %s %% de las toneladas; el flete por tonelada se mantiene entre $%s y $%s."
+                % (top[1], n0(100.0 * tons_planta[top[0]] / ton), n0(cpt_lo), n0(cpt_hi)))
 
     # --- cumplimiento -------------------------------------------------------------------------
     paneles_c = "".join('<div class="panel">%s</div>' % panel_linea(
         s, meses, serie_seg[s], total_mes, "%s %% en el semestre" % n1(seg_pct[s])) for s in SEGMENTOS)
-    tabla_cum = detalle("Ver la tabla cumplimiento_entrega (24 filas)", tabla_html(
+    tabla_cum = detalle("Ver tabla", tabla_html(
         ["Mes", "Segmento", "Toneladas entregadas", "Toneladas a tiempo", "% a tiempo"],
         [(f["anio_mes"], SEG_NOMBRE[f["segmento_cliente"]], n1(f["toneladas_entregadas"]), n1(f["toneladas_a_tiempo"]),
           n2(f["pct_a_tiempo"])) for f in cum], ["", "", "num", "num", "num"]))
-    lead_cum = ("El cumplimiento global fue %s %%; el mejor mes de embarque fue %s (%s %%) y el más bajo %s (%s %%). "
-                "Cada recuadro compara un segmento (color) con el total del mes (gris). «No identificado» son clientes que no "
-                "existen en el maestro: pesa solo %s %% de lo entregado, por eso sus meses son muy variables."
-                % (n1(pct_global), mes_largo(mejor), n1(total_mes[mejor]["pct"]), mes_largo(peor), n1(total_mes[peor]["pct"]),
-                   n1(100.0 * noid_t / entreg)))
+    lead_cum = ("Llegó a tiempo el %s %% de las toneladas; el mejor mes fue %s (%s %%) y el más bajo %s (%s %%)."
+                % (n1(pct_global), mes_largo(mejor), n1(total_mes[mejor]["pct"]), mes_largo(peor), n1(total_mes[peor]["pct"])))
 
     # --- calidad: embudo, impacto, matriz -------------------------------------------------------
     etapas = [
-        ("Filas replicadas (todas las versiones)", emb_d["filas"], "filas, una por cada versión de un viaje"),
-        ("Viajes únicos", emb_d["unicos"], "−%s versiones anteriores y copias exactas" % n0(emb_d["filas"] - emb_d["unicos"])),
-        ("Viajes vigentes", emb_d["vigentes"], "−%s borrados en el origen" % n0(emb_d["unicos"] - emb_d["vigentes"])),
-        ("Viajes embarcados (TRA o ENT)", emb_d["embarcados"], "−%s programados (PRO) o cancelados (CAN)" % n0(emb_d["vigentes"] - emb_d["embarcados"])),
-        ("Embarcados con comprobante de entrega", emb_d["con_pod"], "−%s sin POD: no se pueden evaluar" % n0(emb_d["embarcados"] - emb_d["con_pod"])),
+        ("Filas replicadas", emb_d["filas"], "todas las versiones"),
+        ("Viajes únicos", emb_d["unicos"], "−%s versiones y copias" % n0(emb_d["filas"] - emb_d["unicos"])),
+        ("Viajes vigentes", emb_d["vigentes"], "−%s borrados" % n0(emb_d["unicos"] - emb_d["vigentes"])),
+        ("Embarcados (TRA o ENT)", emb_d["embarcados"], "−%s programados o cancelados" % n0(emb_d["vigentes"] - emb_d["embarcados"])),
+        ("Con comprobante de entrega", emb_d["con_pod"], "−%s sin comprobante" % n0(emb_d["embarcados"] - emb_d["con_pod"])),
     ]
     mx = etapas[0][1]
     embudo = "".join(
@@ -424,7 +423,7 @@ def construir(d):
         '<div class="rk-row"><div class="rk-lab"><span class="rk-id">%s</span>%s</div>'
         '<div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:%s%%" data-tip="%s"></span></div>'
         '<div class="rk-val">%s</div></div>'
-        % (hid, esc(tit), c1(max(0.6, 100.0 * pct / mx_i)), esc("%s · %s\n%s" % (hid, tit, txt.replace(" (", "\n(", 1))), esc(txt))
+        % (hid, esc(tit), c1(max(0.6, 100.0 * pct / mx_i)), esc("%s · %s\n%s" % (hid, tit, txt.replace(" (", "\n(", 1))), esc(txt.split(" (")[0]))
         for hid, tit, pct, txt in ranking)
 
     h12 = {(r[0], r[1]): (r[2], r[3]) for r in imp["H12"]["filas"]}
@@ -448,7 +447,7 @@ def construir(d):
     total_h12 = sum(valores_h12)
     matriz = '<div class="mx" role="table" aria-label="Toneladas que cambiarían de segmento">%s</div>' % "".join(celdas)
 
-    tabla_imp = detalle("Ver la tabla de impacto de los 14 hallazgos principales", tabla_html(
+    tabla_imp = detalle("Ver tabla", tabla_html(
         ["Hallazgo", "Qué pasa si se ignora", "Efecto"],
         [(hid, tit, txt) for hid, tit, _, txt in ranking], ["", "", ""]))
 
@@ -456,9 +455,9 @@ def construir(d):
     css = CSS.replace("/*CLARO*/", _vars(CLARO)).replace("/*OSCURO*/", _vars(OSCURO))
     cuerpo = """
 <header class="top">
-  <div><p class="eyebrow">Dirección de Logística · Grupo DEACERO (datos ficticios del reto)</p>
+  <div><p class="eyebrow">Dirección de Logística</p>
   <h1>Desempeño de embarques</h1>
-  <p class="lead">%(periodo)s · cuatro plantas · fuente: <code>mart_logistica</code> (<code>embarques_mensual</code> y <code>cumplimiento_entrega</code>)</p></div>
+  <p class="lead">%(periodo)s · 4 plantas</p></div>
   <button id="theme" class="btn" type="button" aria-label="Cambiar entre tema claro y oscuro">Tema</button>
 </header>
 
@@ -473,41 +472,37 @@ def construir(d):
   <h3>Toneladas embarcadas por mes</h3>
   <div class="grid2">%(paneles_t)s</div>
   <h3>Flete por tonelada (MXN/t)</h3>
-  <p class="note">Cada celda es un mes y una planta. Los valores están en un rango muy estrecho, así que el color sirve para ubicar los extremos: lee siempre la cifra de la celda y la escala de abajo (de menor a mayor).</p>
   <div class="heat">%(calor)s</div>
   %(escala)s
   %(tabla_emb)s
 </section>
 
 <section class="card" id="cumplimiento">
-  <h2>Cumplimiento de entrega por segmento de cliente</h2>
+  <h2>Cumplimiento de entrega por segmento</h2>
   <p class="lead">%(lead_cum)s</p>
-  <div class="legend" aria-label="Leyenda"><span class="lg"><svg width="24" height="8" aria-hidden="true"><line x1="0" x2="24" y1="4" y2="4" class="ln" style="stroke:var(--ink2)"/></svg>Segmento</span>
-  <span class="lg"><svg width="24" height="8" aria-hidden="true"><line x1="0" x2="24" y1="4" y2="4" class="ln-total"/></svg>Total del mes (todos los segmentos)</span>
-  <span class="lg-note">Eje vertical de 50 %% a 100 %%</span></div>
+  <div class="legend" aria-label="Leyenda"><span class="lg"><svg width="24" height="8" aria-hidden="true"><line x1="0" x2="24" y1="4" y2="4" class="ln" style="stroke:var(--s1)"/></svg>Segmento</span>
+  <span class="lg"><svg width="24" height="8" aria-hidden="true"><line x1="0" x2="24" y1="4" y2="4" class="ln-total"/></svg>Total del mes</span>
+  <span class="lg-note">Eje de 50 a 100 %% · «No identificado»: clientes fuera del maestro</span></div>
   <div class="grid2">%(paneles_c)s</div>
   %(tabla_cum)s
 </section>
 
 <section class="card" id="calidad">
-  <h2>Calidad de los datos: qué costó llegar a estas cifras</h2>
-  <p class="lead">Los datos llegan como historia de versiones, con borrados, texto sucio y fechas centinela. Dos vistas del trabajo de limpieza:
-  cuánto se reduce el dato crudo hasta los viajes que cuentan, y cuánto se equivocaría cada indicador si se ignorara cada problema
-  (detalle de los 19 hallazgos en <a href="../HALLAZGOS.md">HALLAZGOS.md</a>).</p>
+  <h2>Calidad de los datos</h2>
+  <p class="lead">Del dato crudo a los viajes que cuentan, y cuánto cambiaría cada indicador si se ignorara cada problema.</p>
   <h3>De la réplica a los viajes que cuentan</h3>
   <div class="funnel">%(embudo)s</div>
-  <h3>Cuánto cambiaría el resultado si se ignorara cada problema</h3>
-  <p class="note">Barra = desviación relativa del indicador afectado (flete, viajes, toneladas o %% a tiempo, según el caso). Calculado con <code>tools/analisis_impacto.py</code>.</p>
+  <h3>Efecto de ignorar cada problema</h3>
+  <p class="note">Desviación relativa del indicador afectado.</p>
   <div class="ranked">%(filas_rk)s</div>
   %(tabla_imp)s
-  <h3>Toneladas que cambiarían de segmento si se usara el segmento actual</h3>
-  <p class="note">13 clientes cambian de segmento durante el año. Filas: segmento correcto el día del embarque. Columnas: segmento que recibirían con el segmento actual. En total %(total_h12)s t (%(pct_h12)s %% de lo embarcado).</p>
+  <h3>Toneladas que cambiarían de segmento</h3>
+  <p class="note">Filas: segmento correcto · columnas: segmento si se usara el actual · %(total_h12)s t en total (%(pct_h12)s %%).</p>
   %(matriz)s
 </section>
 
 <footer class="foot">
-  <p>Generado por <code>python tools/generar_dashboard.py</code> a partir de <code>deacero.duckdb</code> y <code>reporte/impacto_hallazgos.json</code>; el CI comprueba que este archivo no quede desactualizado.
-  Paleta categórica y secuencial validada con el validador de contraste y daltonismo del skill de visualización (modo claro y oscuro).</p>
+  <p>Datos ficticios del reto · generado con <code>tools/generar_dashboard.py</code> · detalle de los hallazgos en <a href="../HALLAZGOS.md">HALLAZGOS.md</a></p>
 </footer>
 <div id="tip" role="tooltip" hidden></div>
 """ % {"periodo": esc(periodo), "hero": hero, "tiles": tiles, "lead_emb": esc(lead_emb), "paneles_t": paneles_t, "calor": calor,
@@ -515,6 +510,8 @@ def construir(d):
        "paneles_c": paneles_c, "tabla_cum": tabla_cum, "embudo": embudo, "filas_rk": filas_rk, "tabla_imp": tabla_imp,
        "matriz": matriz, "total_h12": n0(total_h12),
        "pct_h12": n1(100.0 * total_h12 / ton)}
+    # Espacio de no separación entre el número y el signo %: evita un «%)» huérfano al cambiar de línea.
+    cuerpo = cuerpo.replace(" %", "\u00a0%")
     return ('<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
             '<title>Desempeño de embarques</title>\n<style>%s</style>\n</head>\n<body>\n<div class="wrap">%s</div>\n'
@@ -524,7 +521,7 @@ def construir(d):
 def _vars(p):
     v = ["--page:%s" % p["page"], "--surface:%s" % p["surface"], "--ink:%s" % p["ink"], "--ink2:%s" % p["ink2"],
          "--muted:%s" % p["muted"], "--grid:%s" % p["grid"], "--axis:%s" % p["axis"], "--border:%s" % p["border"],
-         "--good:%s" % p["good"], "--s1:%s" % p["s1"], "--s2:%s" % p["s2"], "--s3:%s" % p["s3"]]
+         "--s1:%s" % p["s1"], "--pk:%s" % p["pk"], "--pkf:%s" % p["pkf"]]
     for k, col in enumerate(p["q"]):
         v += ["--q%d:%s" % (k, col), "--qi%d:%s" % (k, tinta_sobre(col))]
     for k, col in enumerate(p["o"]):
@@ -588,7 +585,7 @@ svg text{font-family:inherit;font-size:11.5px;fill:var(--ink2)}
 .xh{stroke:var(--axis);stroke-width:1;opacity:0}
 .hit:hover .xh,.hit:focus .xh{opacity:1}
 .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.ln-total{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.ln-total{fill:none;stroke:var(--pk);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .dot{stroke:var(--surface);stroke-width:2}
 .heat{max-width:760px}
 .hm{border-collapse:separate;border-spacing:2px;width:100%;table-layout:fixed}
