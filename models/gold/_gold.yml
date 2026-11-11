@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: dim_planta
+    description: Dimensión de plantas. Grano, una planta.
+    columns:
+      - name: cla_planta
+        data_tests: [unique, not_null]
+
+  - name: dim_cliente
+    description: Dimensión de clientes con historial de segmento. Grano, un tramo por cliente.
+    data_tests:
+      - llave_unica:
+          arguments:
+            columnas: [cla_cliente, nro_tramo]
+
+  - name: fct_embarques
+    description: Hecho de embarques. Grano, un viaje embarcado (TRA/ENT).
+    columns:
+      - name: id_viaje
+        data_tests: [unique, not_null]
+      - name: anio_mes
+        data_tests: [not_null]
+      - name: cla_planta
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_planta')
+                field: cla_planta
+
+  - name: fct_partidas_embarque
+    description: Hecho de partidas embarcadas con segmento vigente y puntualidad. Grano, una partida.
+    data_tests:
+      - llave_unica:
+          arguments:
+            columnas: [id_viaje, id_partida]
+    columns:
+      - name: toneladas
+        data_tests: [not_null]

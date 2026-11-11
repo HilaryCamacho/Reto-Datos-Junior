@@ -1,0 +1,48 @@
+version: 2
+
+# Contrato: docs/contrato-marts.md. Los nombres de tabla y columna son exactos.
+models:
+  - name: embarques_mensual
+    description: Embarques por planta y mes (toneladas, viajes y flete por tonelada). Grano, anio_mes x cla_planta.
+    data_tests:
+      - llave_unica:
+          arguments:
+            columnas: [anio_mes, cla_planta]
+    columns:
+      - name: anio_mes
+        data_tests: [not_null]
+      - name: cla_planta
+        data_tests: [not_null]
+      - name: nom_planta
+        data_tests: [not_null]
+      - name: num_viajes
+        data_tests: [not_null]
+      - name: toneladas_embarcadas
+        data_tests: [not_null]
+      - name: costo_flete_mxn
+        data_tests: [not_null]
+      - name: costo_flete_por_ton
+        data_tests: [not_null]
+
+  - name: cumplimiento_entrega
+    description: Toneladas entregadas y a tiempo por segmento y mes de embarque. Grano, anio_mes x segmento_cliente.
+    data_tests:
+      - llave_unica:
+          arguments:
+            columnas: [anio_mes, segmento_cliente]
+    columns:
+      - name: anio_mes
+        data_tests: [not_null]
+      - name: segmento_cliente
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['DISTRIBUIDOR', 'CONSTRUCTORA', 'INDUSTRIAL', 'NO_IDENTIFICADO']
+      - name: toneladas_entregadas
+        data_tests: [not_null]
+      - name: toneladas_a_tiempo
+        data_tests: [not_null]
+      - name: pct_a_tiempo
+        description: 100 * toneladas_a_tiempo / toneladas_entregadas, entre 0 y 100.
+        data_tests: [not_null]

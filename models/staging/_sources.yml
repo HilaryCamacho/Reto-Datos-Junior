@@ -1,0 +1,29 @@
+version: 2
+
+# Capa landing: réplica de SQL Server vía Airbyte CDC. Todas las columnas son texto
+# y cada fila es una VERSIÓN del registro (ver docs/diccionario-landing.md).
+sources:
+  - name: landing_fle
+    description: Fletes (SQL Server, esquema fle).
+    schema: landing_fle
+    tables:
+      - name: fle_viaje
+        description: Viajes de embarque. Una fila por versión del viaje.
+      - name: fle_viaje_det
+        description: Partidas del viaje. Una fila por versión de cada partida.
+      - name: fle_entrega
+        description: Comprobante de entrega (POD). Una fila por versión.
+
+  - name: landing_vta
+    description: Ventas (SQL Server, esquema vta).
+    schema: landing_vta
+    tables:
+      - name: vta_cliente
+        description: Maestro de clientes. Cada versión conserva el segmento vigente en ese momento.
+
+  - name: landing_opc
+    description: Catálogos operativos (SQL Server, esquema opc).
+    schema: landing_opc
+    tables:
+      - name: opc_planta
+        description: Catálogo de plantas.
