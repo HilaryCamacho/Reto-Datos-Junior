@@ -51,6 +51,23 @@ Se ejecutan desde la raíz con el entorno virtual activo. Las que prueban cosas 
 | `python tools/verificar_idempotencia.py` | Corre el proyecto **dos veces desde cero** y compara conteo y hash del contenido de las 15 tablas |
 | `python tools/probar_pruebas.py` | Introduce 14 errores a propósito y comprueba que las pruebas los detectan |
 | `python tools/analisis_impacto.py` | Calcula el impacto de cada hallazgo (correcto vs. ingenuo); alimenta `HALLAZGOS.md` |
+| `python tools/perfilar_tabla.py <csv> --llave <col>` | **Perfila cualquier tabla CSV** y señala dónde mirar (ver abajo) |
+
+### Perfilar una tabla nueva
+
+`tools/perfilar_tabla.py` automatiza la primera revisión de una tabla desconocida y devuelve un informe en Markdown con **señales ordenadas por gravedad**. Solo señala; decidir si algo es un error o una regla de negocio le toca a quien conoce el dominio.
+
+```bash
+python tools/perfilar_tabla.py data/replica/carga_1/fle_viaje_det.csv \
+    --llave IdViaje,IdPartida \
+    --rel ClaCliente=data/replica/carga_1/vta_cliente.csv:ClaCliente
+python tools/perfilar_tabla.py data/replica/carga_1/fle_viaje.csv --llave IdViaje \
+    --orden "FechaRealEmbarque<=FechaEmbarqueFinal" --salida perfil.md
+```
+
+Revisa: grano y duplicados (exactos y con contenido distinto), versiones y borrados CDC, nulos y blancos, tipos mezclados, espacios y variantes de mayúsculas, formatos de fecha distintos, valores centinela (`1900-01-01`, `-1`, `N/A`…), fechas futuras, huérfanos contra otra tabla y coherencia entre columnas. Con columnas CDC y una llave perfila el **estado vigente** (última versión, sin borrados); `--crudo` perfila todas las filas.
+
+Cómo sé que funciona: sobre las tablas reales **redescubre los hallazgos que había encontrado a mano** (103 y 101 copias exactas, 20 borrados, los 3 clientes huérfanos con sus 82 filas, el centinela 1900) y sobre una tabla sintética con 12 problemas sembrados detecta los 12. Sus límites: las listas de centinelas son heurísticas y solo lee CSV.
 
 ## Cómo está armado
 
@@ -137,6 +154,7 @@ Lo que agregué sin que lo pidieran, y por qué:
 1. **Prueba de las pruebas** (`tools/probar_pruebas.py`). El reto dice que *"una buena prueba es la que fallaría si el cálculo estuviera mal"*; esta herramienta lo demuestra en lugar de afirmarlo. Además me ayudó: la primera versión mostraba una sola prueba por error porque `dbt build` salta lo que depende de una falla, lo que me hizo cambiar a `run` + `test`.
 2. **Análisis de impacto** (`tools/analisis_impacto.py`). Calcula, para cada hallazgo, el resultado correcto contra el ingenuo. Convierte "encontré un problema" en "este problema duplicaría el flete". Fue lo que me permitió **corregir mis propias hipótesis** (por ejemplo, el centinela `1900-01-01` no era un problema de viajes `PRO`: afecta a 226 viajes embarcados).
 3. **Verificador de idempotencia** (`tools/verificar_idempotencia.py`). Compara el hash del contenido de las 15 tablas entre dos corridas desde cero, no solo el conteo de filas.
+4. **Perfilador de tablas** (`tools/perfilar_tabla.py`). Convierte la revisión manual que hice en una herramienta reutilizable: el reto dice que una parte de la evaluación es revisar *una tabla nueva*, y esta lista de preguntas es la misma que yo seguiría a mano. Al validarla contra mis propios hallazgos corrigió además una afirmación mía imprecisa (ver H01).
 
 ## Lo que dejé fuera
 

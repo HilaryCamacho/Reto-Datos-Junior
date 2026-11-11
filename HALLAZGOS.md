@@ -39,7 +39,7 @@ Además, hay **diferencias entre la documentación y los datos** (sección final
 ### H01 · La tabla trae historia de versiones, no el estado actual
 
 - **Qué vi.** `fle_viaje` tiene 5,584 filas para 1,827 viajes (3 versiones por viaje en promedio). Lo mismo ocurre en `fle_viaje_det` (3,965 filas, 3,757 partidas), `fle_entrega` (1,708 filas, 1,628 viajes) y `vta_cliente` (110 filas, 82 clientes). Un viaje pasa de `PRO` a `TRA` a `ENT`, y cambian su costo, su peso y la fecha del POD.
-- **Cómo lo detecté.** Comparé `count(*)` con `count(distinct llave)` en cada tabla y la distribución de versiones por llave. Verifiqué que ordenar por `_ab_cdc_lsn` y por `_ab_cdc_updated_at` da la misma última versión en todos los viajes (0 diferencias), así que el orden es consistente.
+- **Cómo lo detecté.** Comparé `count(*)` con `count(distinct llave)` en cada tabla y la distribución de versiones por llave. Comprobé que el LSN y la fecha de actualización nunca se contradicen (0 viajes donde un LSN menor tenga una fecha mayor). Pero en **51 viajes hay versiones con LSN distinto y exactamente la misma fecha de actualización**, así que la fecha por sí sola no alcanza para ordenar: **el LSN es el criterio principal** (y la fecha solo desempata).
 - **Cómo afecta.** Sin quedarse con la última versión: **3,629 viajes en lugar de 1,689** y 50,285 t en lugar de 47,092 t. La llave "primaria" del diccionario (`IdViaje (PK)`) no es única en landing.
 - **Qué hice.** Cada modelo `stg_` conserva la última versión por LSN (`row_number() ... order by cdc_lsn desc`). Prueba: `unique` sobre la llave en cada staging. **Excepción deliberada:** `stg_vta__clientes` conserva todas las versiones, porque el historial del segmento es un requisito de negocio (H12).
 
