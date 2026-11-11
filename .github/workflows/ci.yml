@@ -18,7 +18,9 @@ permissions:
 
 jobs:
   dbt:
-    runs-on: ubuntu-latest
+    # Fijado (no "ubuntu-latest"): el proyecto se probó con Python 3.9, y las imágenes
+    # más nuevas de Ubuntu ya no traen un Python 3.9 disponible para setup-python.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
