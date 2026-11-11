@@ -1,0 +1,23 @@
+# Entorno virtual
+.venv/
+__pycache__/
+*.pyc
+
+# Artefactos de dbt
+target/
+dbt_packages/
+logs/
+
+# Base de datos generada (se reconstruye corriendo el proyecto)
+*.duckdb
+*.duckdb.wal
+
+# Sistema / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Secretos (no debe haber ninguno en este repo)
+.env
+*.pem
+*.key

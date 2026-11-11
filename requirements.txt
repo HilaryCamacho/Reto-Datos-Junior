@@ -1,0 +1,7 @@
+# Versiones fijadas para reproducibilidad (probadas con Python 3.9.6)
+dbt-core==1.10.23
+dbt-duckdb==1.10.0
+duckdb==1.4.5
+pandas==2.3.3
+plotly==7.1.0
+PyYAML==6.0.3
