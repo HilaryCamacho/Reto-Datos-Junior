@@ -56,3 +56,9 @@ jobs:
           python tools/perfilar_tabla.py data/replica/carga_1/fle_viaje_det.csv --llave IdViaje,IdPartida \
             --rel ClaCliente=data/replica/carga_1/vta_cliente.csv:ClaCliente > perfil_det.md
           grep -q "no existen en la tabla de referencia" perfil_det.md
+
+      - name: El dashboard y el análisis de impacto versionados no están desactualizados
+        run: |
+          python tools/analisis_impacto.py > /dev/null
+          python tools/generar_dashboard.py
+          git diff --exit-code -- reporte/impacto_hallazgos.json reporte/dashboard.html
