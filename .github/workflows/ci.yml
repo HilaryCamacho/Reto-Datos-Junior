@@ -46,3 +46,13 @@ jobs:
 
       - name: Prueba de las pruebas (14 errores introducidos a propósito)
         run: python tools/probar_pruebas.py
+
+      - name: Prueba de humo del perfilador (debe seguir detectando lo conocido)
+        run: |
+          python tools/perfilar_tabla.py data/replica/carga_1/fle_viaje.csv --llave IdViaje \
+            --orden "FechaRealEmbarque<=FechaEmbarqueFinal" > perfil_viaje.md
+          grep -q "centinela de fecha" perfil_viaje.md
+          grep -q "copias exactas" perfil_viaje.md
+          python tools/perfilar_tabla.py data/replica/carga_1/fle_viaje_det.csv --llave IdViaje,IdPartida \
+            --rel ClaCliente=data/replica/carga_1/vta_cliente.csv:ClaCliente > perfil_det.md
+          grep -q "no existen en la tabla de referencia" perfil_det.md
