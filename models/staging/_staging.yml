@@ -1,0 +1,84 @@
+version: 2
+
+# Pruebas de la capa staging: verifican que la deduplicación CDC dejó una sola fila
+# por llave y que la normalización de texto dejó solo los valores esperados.
+models:
+  - name: stg_fle__viajes
+    description: Viajes de embarque, última versión vigente (sin borrados). Grano, un viaje.
+    columns:
+      - name: id_viaje
+        data_tests: [unique, not_null]
+      - name: cla_planta
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_opc__plantas')
+                field: cla_planta
+      - name: fecha_compromiso
+        data_tests: [not_null]
+      - name: estatus
+        description: PRO, TRA, ENT o CAN, ya normalizado (sin espacios ni minúsculas).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['PRO', 'TRA', 'ENT', 'CAN']
+
+  - name: stg_fle__viajes_det
+    description: Partidas de viaje, última versión vigente. Grano, una partida (id_viaje, id_partida).
+    data_tests:
+      - llave_unica:
+          arguments:
+            columnas: [id_viaje, id_partida]
+    columns:
+      - name: id_viaje
+        data_tests:
+          - not_null
+          # Hallazgo conocido: hay partidas cuyo viaje fue borrado en el origen. Se deja
+          # como advertencia (no error) y se resuelve al unir con viajes vigentes.
+          - relationships:
+              arguments:
+                to: ref('stg_fle__viajes')
+                field: id_viaje
+              config:
+                severity: warn
+      - name: cla_cliente
+        data_tests: [not_null]
+      - name: peso_kg
+        data_tests: [not_null]
+
+  - name: stg_fle__entregas
+    description: POD (comprobante de entrega), última versión. Grano, un viaje.
+    columns:
+      - name: id_viaje
+        data_tests: [unique, not_null]
+      - name: fecha_entrega
+        data_tests: [not_null]
+
+  - name: stg_vta__clientes
+    description: >
+      Maestro de clientes con TODAS las versiones (historial de segmento), sin copias exactas.
+      Grano, una versión de un cliente (cla_cliente, cdc_lsn).
+    data_tests:
+      - llave_unica:
+          arguments:
+            columnas: [cla_cliente, cdc_lsn]
+    columns:
+      - name: cla_cliente
+        data_tests: [not_null]
+      - name: segmento
+        description: DISTRIBUIDOR, CONSTRUCTORA o INDUSTRIAL, ya normalizado.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['DISTRIBUIDOR', 'CONSTRUCTORA', 'INDUSTRIAL']
+
+  - name: stg_opc__plantas
+    description: Catálogo de plantas. Grano, una planta.
+    columns:
+      - name: cla_planta
+        data_tests: [unique, not_null]
+      - name: nom_planta
+        data_tests: [not_null]
