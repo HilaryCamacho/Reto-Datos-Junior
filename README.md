@@ -82,7 +82,7 @@ Cómo sé que funciona: sobre las tablas reales **redescubre los hallazgos que h
 - **Cumplimiento:** un gráfico por segmento contra el total del mes.
 - **Calidad de datos:** el embudo de 5,584 filas replicadas a 1,689 viajes, el ranking de cuánto se equivocaría cada indicador si se ignorara cada hallazgo, y la matriz de toneladas que cambiarían de segmento.
 
-Decisiones: es **un solo archivo sin dependencias** (SVG y CSS escritos a mano, sin librerías), para abrirlo sin internet; cada gráfico tiene una **tabla gemela** y tooltips que también funcionan con teclado, de modo que ningún valor depende del puntero; y los colores salen de una paleta **validada con script** (separación para daltonismo, contraste, modo claro y oscuro). Se **regenera de forma determinista** (mismos datos, mismo archivo, byte por byte) y el CI falla si el archivo versionado quedó desactualizado.
+Decisiones: es **un solo archivo sin dependencias** (SVG y CSS escritos a mano, sin librerías), para abrirlo sin internet; cada gráfico tiene una **tabla gemela** y tooltips que también funcionan con teclado, de modo que ningún valor depende del puntero; y usa **una sola familia de color (vino y rosa)** con rampas validadas con script (monotonía de luminosidad, contraste y tonalidad única, en modo claro y oscuro); el segmento se identifica por el título de cada recuadro y no por el color. Se **regenera de forma determinista** (mismos datos, mismo archivo, byte por byte) y el CI falla si el archivo versionado quedó desactualizado.
 
 ## Cómo está armado
 
