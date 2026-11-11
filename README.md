@@ -1,54 +1,153 @@
-# Reto — Ingeniero(a) de Datos Junior · Grupo DEACERO
+# Reto Ingeniero(a) de Datos Junior · Logística
 
-## Antes de empezar
+Pipeline **dbt + DuckDB** que lleva la réplica CDC de fletes, clientes y plantas hasta las dos tablas que necesita Logística, en el esquema `mart_logistica` de `deacero.duckdb`:
 
-- **Qué hay en esta carpeta:** este `README.md` (las instrucciones), `docs/` (la documentación del negocio y del sistema origen) y `data/replica/carga_1/` (los datos, en CSV).
-- **Los datos son ficticios.** Se generaron para este reto: no corresponden a clientes, operaciones ni cifras reales.
-- **Plazo: 7 días naturales (1 semana)**, contados a partir del día en que recibes este archivo. Es el tiempo máximo para enviar el link de tu repositorio. Dedicación esperada: alrededor de **8 a 12 horas**.
-- **Qué necesitas:** una computadora con Python 3.9 o superior, Git y una cuenta de GitHub. Todo lo demás es gratis y se instala desde Python.
-- **Cómo entregas:** responde al correo con el que recibiste este archivo con el **link a tu repositorio público**. Solo el link: no adjuntes archivos.
-- **No hay canal de dudas, a propósito.** Si algo es ambiguo, toma la decisión que te parezca más razonable, escríbela en una sección **Supuestos** de tu `README.md` y sigue adelante. Cómo resuelves la ambigüedad también es parte de la evaluación.
+| Tabla | Grano | Responde |
+|---|---|---|
+| `embarques_mensual` | `anio_mes` × `cla_planta` | Toneladas, viajes y flete por tonelada, por planta y mes |
+| `cumplimiento_entrega` | `anio_mes` × `segmento_cliente` | % de toneladas entregadas a tiempo, por segmento |
 
-## El problema
+- 📋 **Problemas encontrados en los datos:** [`HALLAZGOS.md`](HALLAZGOS.md) (19 hallazgos con su impacto medido)
+- 📄 Enunciado original: [`docs/enunciado-reto.md`](docs/enunciado-reto.md)
 
-Replicamos los sistemas operativos de la empresa a la nube. Los datos llegan tal cual salen del origen: en texto, con historia de cambios y con detalles que nadie documentó. El área de Logística necesita un tablero confiable, y para eso necesita datos limpios y bien modelados.
+## Cómo correrlo
 
-## Lo que queremos
+Requisitos: **Python 3.9 o superior** y Git. Todo corre en local, sin credenciales ni costo. Probado con Python 3.9.6 en macOS.
 
-Lleva los datos replicados hasta **las dos tablas** que necesita Logística, y cuéntanos qué encontraste en el camino.
+```bash
+git clone https://github.com/HilaryCamacho/Reto-Datos-Junior.git
+cd Reto-Datos-Junior
 
-No buscamos que lo sepas todo. Buscamos ver **cómo piensas**: cómo revisas datos que no conoces, cómo traduces una regla de negocio a código, cómo compruebas que tu resultado es correcto y qué se te ocurre hacer más allá de lo que te pidieron.
+python3 -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -r requirements.txt      # versiones fijadas
 
-## El material
+dbt build                            # carga, transforma y prueba, todo en un comando
+```
 
-- En `data/replica/carga_1/` hay cinco tablas de fletes, clientes y plantas, replicadas desde SQL Server con **Airbyte CDC**. Todas las columnas vienen en texto.
-- En `docs/` está lo que nos dieron el negocio y los equipos del origen: el requerimiento, un diccionario de datos, el contrato de las tablas finales y nuestras convenciones. Úsalos como usarías documentación real: ayudan, pero no los des por ciertos sin revisarlos.
+Para comprobar que **se puede correr dos veces sin duplicar**, repite el último comando:
 
-## Qué tienes que entregar
+```bash
+dbt build
+```
 
-1. **Las dos tablas** de `docs/contrato-marts.md` (`embarques_mensual` y `cumplimiento_entrega`) en el esquema `mart_logistica` de un archivo `deacero.duckdb`, siguiendo las reglas de `docs/requerimiento-negocio.md`.
-2. **Que se pueda correr dos veces** sin que nada se duplique.
-3. **Al menos dos pruebas automáticas** que revisen una regla de negocio del requerimiento (no solo que una columna no venga vacía). Una buena prueba es la que **fallaría** si el cálculo estuviera mal.
-4. **`HALLAZGOS.md`**: los problemas que encontraste en los datos. Para cada uno: qué viste, cómo lo detectaste, cómo afecta al resultado y qué hiciste con él.
-5. **`README.md`**: cómo correrlo paso a paso, qué decisiones tomaste y por qué, y qué dejaste fuera.
-6. **Tu toque:** algo que no te pedimos y que creas que aporta valor. Puede ser cualquier cosa: una visualización, un reporte de calidad de datos, una forma más fácil de correrlo, un script que perfile tablas, una propuesta de mejora. Explícanos por qué lo elegiste.
+El resultado esperado, ambas veces, es `PASS=86 WARN=1 ERROR=0`. La advertencia es intencional: son 39 partidas cuyo viaje fue borrado en el origen (ver [H03](HALLAZGOS.md#h03--viajes-borrados-en-el-origen-que-conservan-estatus-traent)). Los warnings de `urllib3`/`LibreSSL` en macOS son inofensivos.
 
-## Herramientas
+Para ver las tablas (no hace falta instalar nada más: DuckDB viene con las dependencias):
 
-- Te recomendamos **dbt con DuckDB** (es gratis y corre en tu computadora). Si no los conoces, es buena oportunidad para aprender lo básico; si prefieres SQL y Python, también se vale: explica por qué.
-- Todo debe correr en local, sin costo y sin credenciales.
-- Usa IA todo lo que quieras, pero **entiende lo que entregas**: en la sesión te vamos a preguntar por qué hiciste cada cosa.
+```bash
+python -c "import duckdb; con = duckdb.connect('deacero.duckdb', read_only=True); print(con.sql('select * from mart_logistica.embarques_mensual order by 1, 2'))"
+python -c "import duckdb; con = duckdb.connect('deacero.duckdb', read_only=True); print(con.sql('select * from mart_logistica.cumplimiento_entrega order by 1, 2'))"
+```
 
-## Cómo lo vamos a evaluar
+`deacero.duckdb` no se versiona: se genera al correr el proyecto.
 
-1. Seguimos tu README, lo corremos **dos veces** y comparamos tus tablas contra los resultados esperados.
-2. Leemos tu `HALLAZGOS.md`, tus pruebas y tu código.
-3. **Sesión en vivo de 60 minutos:** nos explicas tu solución y después revisamos juntos una tabla nueva que nunca has visto. Ahí no esperamos que sepas la respuesta: queremos ver cómo la buscas. Puedes usar tus herramientas.
+### Herramientas extra (opcionales)
 
-## Entrega
+Se ejecutan desde la raíz con el entorno virtual activo. Las que prueban cosas trabajan sobre una **copia temporal**, así que no tocan tu `deacero.duckdb`.
 
-- **Plazo: 7 días naturales (1 semana)** desde que recibiste este archivo.
-- Un repositorio **público** en tu GitHub con todo lo anterior (el link se entrega como dice *Antes de empezar*). Si no te alcanza el tiempo, entrega menos pero bien hecho, y dinos qué faltó: eso también cuenta a tu favor.
-- El historial de git cuenta: haz commits a medida que avances.
-- Cero secretos en el repositorio.
+| Comando | Qué hace |
+|---|---|
+| `python tools/verificar_idempotencia.py` | Corre el proyecto **dos veces desde cero** y compara conteo y hash del contenido de las 15 tablas |
+| `python tools/probar_pruebas.py` | Introduce 14 errores a propósito y comprueba que las pruebas los detectan |
+| `python tools/analisis_impacto.py` | Calcula el impacto de cada hallazgo (correcto vs. ingenuo); alimenta `HALLAZGOS.md` |
 
+## Cómo está armado
+
+```
+landing_*        CSV tal cual (todo texto), con historia de versiones     [macro cargar_landing]
+   ↓
+staging          1:1 con la fuente: tipos, nombres, última versión CDC    stg_<fuente>__<entidad>
+   ↓
+silver_logistica reglas de negocio reutilizables                          int_<entidad>__<detalle>
+   ↓
+gold_logistica   hechos y dimensiones                                     fct_*, dim_*
+   ↓
+mart_logistica   las dos tablas del contrato
+```
+
+Sigue las convenciones de `docs/convenciones.md`: capas medallion, prefijos de modelos, `snake_case` en español, siempre `ref()`/`source()`, y Conventional Commits en el historial.
+
+```
+models/staging/   5 modelos stg_*  (+ _sources.yml y pruebas)
+models/silver/    int_clientes__vigencia · int_viajes__embarcados · int_partidas__segmento · int_viajes__puntualidad
+models/gold/      dim_planta · dim_cliente · fct_embarques · fct_partidas_embarque
+models/marts/     embarques_mensual · cumplimiento_entrega
+macros/           cargar_landing · generate_schema_name · a_fecha_local · independiente_landing (solo pruebas)
+tests/            llave_unica (genérica) · negocio/ (pruebas de reglas de negocio)
+tools/            herramientas de verificación y análisis
+```
+
+## Decisiones y por qué
+
+| Decisión | Por qué |
+|---|---|
+| **dbt + DuckDB** | Es lo recomendado y es lo que se usa en producción (con BigQuery de destino). Las capas, las pruebas y la documentación viven junto al SQL. |
+| **La landing es una tabla real** (`create or replace`), no una vista sobre el CSV | Como en producción, donde la réplica es una tabla. Si la fuente cambia, solo cambia el macro `cargar_landing`. Además es lo que hace al proyecto **idempotente**: cada corrida reconstruye todo desde cero. |
+| **La carga corre en `on-run-start`** | Un solo comando (`dbt build`) hace todo; el evaluador no tiene que recordar un paso previo. |
+| **Lee `carga_*`** (glob) | Una carga nueva se agrega sola. Las filas repetidas se resuelven en staging con el LSN. |
+| **`cast` y no `try_cast` en staging** | Si el origen cambia de formato quiero que el pipeline **falle y se note**. Un `try_cast` convertiría el dato en nulo en silencio y alteraría los resultados. |
+| **Borrados y versiones se resuelven en staging; el negocio, en silver** | Quedarse con la última versión es semántica CDC, no regla de negocio. Así staging sigue "1:1, sin lógica de negocio". |
+| **La vigencia del segmento vive en silver** (`int_clientes__vigencia`) y `dim_cliente` la certifica en gold | Silver no debe depender de gold. |
+| **El peso se agrega por viaje *antes* del join** | El flete es por viaje; unirlo con partidas lo multiplica ([H08](HALLAZGOS.md#h08--el-flete-es-por-viaje-pero-el-viaje-tiene-varias-partidas): +105.8 %). |
+| **Esquema exacto `mart_logistica`** con un `generate_schema_name` propio | Por defecto dbt lo llamaría `main_mart_logistica`; el contrato exige el nombre exacto. |
+| **Sin paquetes externos** (no `dbt_utils`) | "Todo debe correr en local, sin credenciales": `dbt deps` necesita internet. La única prueba genérica que hacía falta (`llave_unica`) está en `tests/generic/`. |
+| **Nombres de columna y tabla exactos del contrato**, más columnas de apoyo solo en silver/gold | El contrato permite columnas extra; en los marts dejé solo las pedidas. |
+
+## Supuestos
+
+Donde el requerimiento o la documentación eran ambiguos, tomé la interpretación más razonable. Cada uno tiene su sustento en [`HALLAZGOS.md`](HALLAZGOS.md).
+
+1. **"A tiempo" compara fechas, no timestamps.** `date(FechaEntrega) <= date(FechaCompromiso)`. El compromiso siempre es 00:00 y la entrega trae hora; comparar timestamps marcaría tarde cualquier entrega del mismo día (53.91 % vs 71.77 %, [H11](HALLAZGOS.md#h11--fechacompromiso-a-las-0000-vs-fechaentrega-con-hora)). **Es el supuesto de mayor impacto.**
+2. **Un viaje `TRA` con POD cuenta como entregado y evaluado.** Tiene comprobante de entrega aunque su estatus no se haya actualizado (1 caso).
+3. **Se usa la última versión de cada registro** (por LSN), incluidas las correcciones del POD, del costo y del peso. Si la última versión es un borrado, el registro no existe.
+4. **`1900-01-01` en `FechaRealEmbarque` significa "no capturada"** y se trata como nulo, para que aplique el respaldo `FechaEmbarqueFinal`.
+5. **El mes de embarque se toma de la fecha tal como viene** (ya está en hora local de planta), sin conversión de zona horaria. Para la planta de Houston el diccionario dice "America/Monterrey", lo cual no pude verificar.
+6. **El segmento aplica desde el día del registro del cambio, en hora local de Monterrey**, con la fecha de inicio inclusiva: `[desde, hasta)`. `_ab_cdc_updated_at` viene en UTC y se convierte con el nombre de la zona, no con "−6 horas".
+7. **Versiones consecutivas con el mismo segmento no son un cambio** (se colapsan). Los espacios y mayúsculas del texto se normalizan.
+8. **Cliente que embarca antes de su primer registro** → se usa su primer segmento conocido (el cliente existe). **Cliente dado de baja** o **inexistente en el maestro** → `NO_IDENTIFICADO`. Hoy ningún dato real cae en el primer caso; solo lo cubre una prueba unitaria.
+9. **Las 84 posibles partidas repetidas no se eliminan** ([H17](HALLAZGOS.md#h17--partidas-con-el-mismo-viaje-cliente-artículo-y-peso-abierto)): no hay evidencia de que sean duplicados y el total por viaje respeta la capacidad de un camión.
+10. **`cumplimiento_entrega` se mide en toneladas** (como pide el contrato) y se agrupa por el **mes de embarque**, no el de entrega. Cada partida aporta sus toneladas al segmento de *su* cliente y hereda la puntualidad de su viaje.
+11. **Los marts solo traen combinaciones con datos** (no se rellenan con ceros las plantas o segmentos sin movimiento). Hoy resultan 24 filas en cada tabla: 6 meses × 4 plantas, y 6 meses × 4 segmentos.
+12. **`costo_flete_por_ton` se calcula con las sumas sin redondear** y se redondea al final, para no arrastrar error de redondeo.
+13. **Un viaje embarcado sin partidas aportaría 0 toneladas** pero sí contaría como viaje. Hoy no ocurre.
+
+## Pruebas
+
+`dbt build` ejecuta **71 pruebas** (el `PASS=86` de su resumen incluye además los 15 modelos y el paso de carga de landing):
+
+| Tipo | Cantidad | Para qué |
+|---|---|---|
+| Esquema y grano | 59 | Llaves únicas, no nulos, valores válidos, relaciones (1 es la advertencia intencional) |
+| Negocio | 7 | Reglas del requerimiento sobre los datos reales |
+| Unitarias | 5 | Reglas con datos inventados, para ramas que los datos reales no ejercitan |
+
+**Las pruebas de negocio** (`tests/negocio/`) son las que fallarían si el cálculo estuviera mal:
+
+- **Conciliación independiente.** Compara los marts contra un segundo cálculo escrito distinto, desde landing (otro método de deduplicación y fechas como texto). Si dos caminos independientes llegan al mismo número, es difícil que ambos se equivoquen igual.
+- **Casos conocidos**, verificados a mano contra los CSV: los viajes 250312, 250313 y 251800 (cruzan de mes), 250001, 250005 y 250006 (puntualidad), 250180 y 250397 (POD corregido) y los clientes 1002, 1055 y 1009 (cambio de segmento).
+- **Unitarias**: un cambio de segmento a las 05:30 UTC del 1 de marzo (28 de febrero en Monterrey), el día exacto del cambio, un cliente dado de baja y un embarque anterior al primer registro.
+
+**¿Cómo sé que las pruebas sirven?** `python tools/probar_pruebas.py` mete 14 errores a propósito en una copia (fan-out del flete, incluir `PRO`, la fecha final en vez de la real, comparar timestamps, usar el segmento actual, dividir entre 1024, no excluir borrados, versión vieja, ignorar la zona horaria, etc.). **Las pruebas detectan los 14.** Casi todos los errores los atrapan varias pruebas; tres dependen de una sola (kg/1024, incluir viajes sin POD y la zona horaria). La zona horaria solo la atrapa una prueba unitaria, porque los datos reales no tienen ningún cambio de segmento cerca de medianoche.
+
+## Mi toque
+
+Lo que agregué sin que lo pidieran, y por qué:
+
+1. **Prueba de las pruebas** (`tools/probar_pruebas.py`). El reto dice que *"una buena prueba es la que fallaría si el cálculo estuviera mal"*; esta herramienta lo demuestra en lugar de afirmarlo. Además me ayudó: la primera versión mostraba una sola prueba por error porque `dbt build` salta lo que depende de una falla, lo que me hizo cambiar a `run` + `test`.
+2. **Análisis de impacto** (`tools/analisis_impacto.py`). Calcula, para cada hallazgo, el resultado correcto contra el ingenuo. Convierte "encontré un problema" en "este problema duplicaría el flete". Fue lo que me permitió **corregir mis propias hipótesis** (por ejemplo, el centinela `1900-01-01` no era un problema de viajes `PRO`: afecta a 226 viajes embarcados).
+3. **Verificador de idempotencia** (`tools/verificar_idempotencia.py`). Compara el hash del contenido de las 15 tablas entre dos corridas desde cero, no solo el conteo de filas.
+
+## Lo que dejé fuera
+
+- **Portabilidad a BigQuery.** El diseño pensó en BigQuery, pero el SQL **no es 100 % portable**: `cargar_landing` usa `read_csv` de DuckDB (en producción la landing ya sería una tabla), `a_fecha_local` usa `timezone()`, y hay casts como `decimal(18,2)`. Son pocos puntos y están aislados en macros, pero no los adapté ni los probé.
+- **Costo en BigQuery.** Staging es una vista y cada capa vuelve a leer la anterior. En volúmenes grandes habría que materializar staging, **particionar por fecha de embarque y agrupar** por planta, y hacer los modelos incrementales (por LSN). Con 11 mil filas no aporta, así que no lo hice.
+- **Carga incremental (`carga_2`).** El proyecto lee `carga_*` y deduplica por LSN, pero solo tengo una carga para probarlo.
+- **Región, básculas y plantas de EE. UU.** El requerimiento los marca como fuera de alcance.
+- **El tablero de Looker.** Lo construye BI a partir de los marts.
+- **Orquestación y CI.** No hay pipeline automatizado ni `dbt docs` publicado.
+- **Resolver las dudas abiertas** (partidas repetidas, zona horaria de Houston): requieren preguntar al equipo del sistema origen.
+
+## Historial
+
+Commits pequeños, en inglés, con Conventional Commits (`feat:`, `test:`, `docs:`, `chore:`). Sin secretos en el repositorio.
