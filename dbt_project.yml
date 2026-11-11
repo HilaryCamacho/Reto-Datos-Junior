@@ -1,0 +1,35 @@
+name: deacero_logistica
+version: "1.0.0"
+config-version: 2
+profile: deacero
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # Carpeta que contiene las cargas replicadas (carga_1, carga_2, ...)
+  ruta_replica: "data/replica"
+
+# La landing se reconstruye con create or replace al inicio de cada corrida,
+# por lo que correr el proyecto N veces deja exactamente el mismo resultado.
+on-run-start:
+  - "{{ cargar_landing() }}"
+
+models:
+  deacero_logistica:
+    staging:
+      +materialized: view
+      +schema: staging
+    silver:
+      +materialized: table
+      +schema: silver_logistica
+    gold:
+      +materialized: table
+      +schema: gold_logistica
+    marts:
+      +materialized: table
+      +schema: mart_logistica
