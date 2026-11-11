@@ -1,0 +1,442 @@
+{
+  "H01": {
+    "titulo": "Versiones CDC: la tabla trae historia, no el estado actual",
+    "nota": "Sin quedarse con la última versión, viajes y toneladas se inflan.",
+    "columnas": [
+      "viajes_correcto",
+      "viajes_ingenuo",
+      "toneladas_correcto",
+      "toneladas_ingenuo"
+    ],
+    "filas": [
+      [
+        1689,
+        3629,
+        47091.622,
+        50285.194
+      ]
+    ]
+  },
+  "H02": {
+    "titulo": "Filas duplicadas exactas de Airbyte (mismo LSN, mismo contenido)",
+    "nota": "Copias idénticas que no son versiones nuevas.",
+    "columnas": [
+      "tabla",
+      "filas",
+      "filas_distintas"
+    ],
+    "filas": [
+      [
+        "fle_viaje",
+        5584,
+        5481
+      ],
+      [
+        "fle_viaje_det",
+        3965,
+        3864
+      ],
+      [
+        "fle_entrega",
+        1708,
+        1708
+      ],
+      [
+        "vta_cliente",
+        110,
+        106
+      ]
+    ]
+  },
+  "H03": {
+    "titulo": "Viajes borrados en el origen que aún traen estatus TRA/ENT",
+    "nota": "Si no se excluyen, se cuentan viajes que ya no existen.",
+    "columnas": [
+      "viajes",
+      "toneladas",
+      "costo_mxn"
+    ],
+    "filas": [
+      [
+        19,
+        571.639,
+        331901.45
+      ]
+    ]
+  },
+  "H04": {
+    "titulo": "Estatus con mayúsculas y espacios mezclados (ENT, Ent, ' ENT', 'ent ')",
+    "nota": "Filtrar con IN ('TRA','ENT') sin normalizar pierde viajes embarcados.",
+    "columnas": [
+      "viajes_perdidos",
+      "toneladas_perdidas",
+      "costo_perdido_mxn",
+      "viajes_correcto"
+    ],
+    "filas": [
+      [
+        194,
+        5416.355,
+        3316254.68,
+        1689
+      ]
+    ]
+  },
+  "H05": {
+    "titulo": "Fecha centinela 1900-01-01 en FechaRealEmbarque de viajes embarcados",
+    "nota": "Sin limpiarla el viaje se agrupa en el mes '1900-01' y desaparece de su mes real.",
+    "columnas": [
+      "viajes",
+      "toneladas",
+      "costo_mxn"
+    ],
+    "filas": [
+      [
+        226,
+        6289.368,
+        3830655.32
+      ]
+    ]
+  },
+  "H06": {
+    "titulo": "Viajes embarcados sin fecha real válida: dependen del respaldo FechaEmbarqueFinal",
+    "nota": "Usar solo FechaRealEmbarque dejaría estos viajes sin mes.",
+    "columnas": [
+      "causa",
+      "viajes",
+      "toneladas",
+      "costo_mxn"
+    ],
+    "filas": [
+      [
+        "real 1900-01-01",
+        226,
+        6289.368,
+        3830655.32
+      ],
+      [
+        "real NULL",
+        365,
+        10126.838,
+        6129136.54
+      ]
+    ]
+  },
+  "H07": {
+    "titulo": "Fecha real y fecha final caen en meses distintos",
+    "nota": "Elegir la fecha final mueve estos viajes de mes.",
+    "columnas": [
+      "mes_correcto",
+      "mes_si_usa_fecha_final",
+      "viajes",
+      "toneladas"
+    ],
+    "filas": [
+      [
+        "2026-01",
+        "2026-02",
+        2,
+        46.842
+      ],
+      [
+        "2026-06",
+        "2026-07",
+        1,
+        34.788
+      ]
+    ]
+  },
+  "H08": {
+    "titulo": "El flete es por viaje pero el viaje tiene varias partidas",
+    "nota": "Unir con partidas y sumar el costo lo multiplica por el número de partidas.",
+    "columnas": [
+      "cla_planta",
+      "costo_correcto",
+      "costo_ingenuo",
+      "sobreestimacion_pct"
+    ],
+    "filas": [
+      [
+        0,
+        28421589.81,
+        58489713.8,
+        105.8
+      ],
+      [
+        1,
+        10692371.07,
+        21705450.86,
+        103.0
+      ],
+      [
+        2,
+        8112760.41,
+        17011319.07,
+        109.7
+      ],
+      [
+        3,
+        5872732.27,
+        11730941.56,
+        99.8
+      ],
+      [
+        4,
+        3743726.06,
+        8042002.31,
+        114.8
+      ]
+    ]
+  },
+  "H09": {
+    "titulo": "Viajes PRO y CAN traen partidas con peso",
+    "nota": "Si no se filtra por estatus, se cuentan toneladas que nunca salieron.",
+    "columnas": [
+      "estatus",
+      "viajes",
+      "toneladas"
+    ],
+    "filas": [
+      [
+        "CAN",
+        94,
+        2605.946
+      ],
+      [
+        "PRO",
+        25,
+        732.137
+      ]
+    ]
+  },
+  "H10": {
+    "titulo": "Tráfico corrige la fecha del POD (hay varias versiones)",
+    "nota": "Quedarse con la primera versión cambia la puntualidad de algunos viajes.",
+    "columnas": [
+      "pods_corregidos",
+      "corrigen_la_clasificacion",
+      "ton_a_tiempo_correcto",
+      "ton_a_tiempo_primera_version",
+      "pct_correcto",
+      "pct_primera_version"
+    ],
+    "filas": [
+      [
+        80,
+        11,
+        32579.435,
+        32642.735,
+        71.77,
+        71.91
+      ]
+    ]
+  },
+  "H11": {
+    "titulo": "FechaCompromiso es 00:00 y FechaEntrega trae hora",
+    "nota": "Comparar timestamps marca tarde cualquier entrega del día del compromiso.",
+    "columnas": [
+      "viajes_con_pod",
+      "a_tiempo_comparando_fechas",
+      "a_tiempo_comparando_timestamps",
+      "pct_ton_correcto",
+      "pct_ton_ingenuo"
+    ],
+    "filas": [
+      [
+        1628,
+        1171,
+        875,
+        71.77,
+        53.91
+      ]
+    ]
+  },
+  "H12": {
+    "titulo": "El segmento de 13 clientes cambia durante el año",
+    "nota": "Usar el segmento actual reasigna toneladas embarcadas antes del cambio.",
+    "columnas": [
+      "segmento_correcto",
+      "segmento_ingenuo",
+      "partidas",
+      "toneladas"
+    ],
+    "filas": [
+      [
+        "DISTRIBUIDOR",
+        "CONSTRUCTORA",
+        91,
+        1208.194
+      ],
+      [
+        "INDUSTRIAL",
+        "CONSTRUCTORA",
+        77,
+        1159.588
+      ],
+      [
+        "CONSTRUCTORA",
+        "INDUSTRIAL",
+        24,
+        331.68
+      ],
+      [
+        "INDUSTRIAL",
+        "DISTRIBUIDOR",
+        24,
+        253.444
+      ],
+      [
+        "CONSTRUCTORA",
+        "DISTRIBUIDOR",
+        18,
+        240.304
+      ],
+      [
+        "DISTRIBUIDOR",
+        "INDUSTRIAL",
+        10,
+        142.892
+      ]
+    ]
+  },
+  "H13": {
+    "titulo": "Clientes 9001, 9002 y 9003 no existen en el maestro",
+    "nota": "Un join interno los descarta: se pierden toneladas y cambia el % a tiempo.",
+    "columnas": [
+      "toneladas_no_identificado_embarcadas",
+      "pct_de_toneladas_embarcadas",
+      "toneladas_no_identificado_con_pod",
+      "pct_a_tiempo_global_con",
+      "pct_a_tiempo_global_si_se_descartan"
+    ],
+    "filas": [
+      [
+        983.19,
+        2.09,
+        983.19,
+        71.77,
+        71.77
+      ]
+    ]
+  },
+  "H14": {
+    "titulo": "Segmento con espacios y mayúsculas mezcladas ('Constructora ')",
+    "nota": "Sin normalizar, aparecen categorías falsas y cambios de segmento inexistentes.",
+    "columnas": [
+      "versiones_con_texto_sucio",
+      "partidas_afectadas",
+      "toneladas_con_categoria_falsa"
+    ],
+    "filas": [
+      [
+        7,
+        245,
+        3412.617
+      ]
+    ]
+  },
+  "H15": {
+    "titulo": "El costo del flete se revisa entre versiones",
+    "nota": "Usar una versión vieja del costo cambia el flete por tonelada.",
+    "columnas": [
+      "viajes_con_costo_revisado",
+      "costo_correcto",
+      "costo_con_primera_version",
+      "diferencia_mxn"
+    ],
+    "filas": [
+      [
+        177,
+        28421589.81,
+        28073194.98,
+        348394.83
+      ]
+    ]
+  },
+  "H16": {
+    "titulo": "El peso documentado de las partidas se revisa entre versiones",
+    "nota": "Usar una versión vieja cambia las toneladas.",
+    "columnas": [
+      "partidas_con_peso_revisado",
+      "toneladas_correcto",
+      "toneladas_con_primera_version",
+      "diferencia_ton"
+    ],
+    "filas": [
+      [
+        103,
+        47091.622,
+        47088.567,
+        3.055
+      ]
+    ]
+  },
+  "H17": {
+    "titulo": "Partidas con mismo viaje, cliente, artículo y peso (posibles duplicados, NO eliminadas)",
+    "nota": "Observación abierta: si fueran duplicados, las toneladas estarían sobreestimadas.",
+    "columnas": [
+      "grupos",
+      "partidas_involucradas",
+      "toneladas_en_juego",
+      "pct_de_toneladas_totales"
+    ],
+    "filas": [
+      [
+        84,
+        169,
+        795.802,
+        1.69
+      ]
+    ]
+  },
+  "H18": {
+    "titulo": "Viajes entregados (ENT) sin POD, y un viaje TRA que sí tiene POD",
+    "nota": "Sin POD no se puede evaluar la puntualidad: esas toneladas quedan fuera de cumplimiento.",
+    "columnas": [
+      "estatus",
+      "tiene_pod",
+      "viajes",
+      "toneladas"
+    ],
+    "filas": [
+      [
+        "ENT",
+        false,
+        25,
+        704.256
+      ],
+      [
+        "ENT",
+        true,
+        1627,
+        45363.319
+      ],
+      [
+        "TRA",
+        false,
+        36,
+        991.812
+      ],
+      [
+        "TRA",
+        true,
+        1,
+        32.235
+      ]
+    ]
+  },
+  "H19": {
+    "titulo": "Cambios de segmento y zona horaria (registro en UTC, embarque en hora local)",
+    "nota": "¿Algún cambio de segmento cae distinto día en UTC que en Monterrey? (si es 0, no hay impacto en esta carga)",
+    "columnas": [
+      "cambios_reales",
+      "cambian_de_dia_en_hora_local"
+    ],
+    "filas": [
+      [
+        13,
+        0
+      ]
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+# Perfil local de DuckDB: sin credenciales ni servicios externos.
+# dbt busca este archivo en el directorio actual, así que basta correr dbt desde la raíz del repo.
+deacero:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: deacero.duckdb
+      threads: 4

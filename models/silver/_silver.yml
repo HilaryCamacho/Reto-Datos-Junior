@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: int_clientes__vigencia
+    description: >
+      Tramos de vigencia del segmento por cliente (SCD2), en fecha local de Monterrey.
+      vigente_hasta es exclusivo; NULL significa vigente hoy.
+    data_tests:
+      - llave_unica:
+          arguments:
+            columnas: [cla_cliente, nro_tramo]
+    columns:
+      - name: vigente_desde
+        data_tests: [not_null]
+      - name: segmento
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['DISTRIBUIDOR', 'CONSTRUCTORA', 'INDUSTRIAL']
+
+  - name: int_viajes__embarcados
+    description: Viajes TRA/ENT con su fecha de embarque efectiva. Grano, un viaje.
+    columns:
+      - name: id_viaje
+        data_tests: [unique, not_null]
+      - name: fecha_embarque
+        data_tests: [not_null]
+      - name: costo_flete_mxn
+        description: Costo por viaje. Todo viaje embarcado debe traerlo.
+        data_tests: [not_null]
+
+  - name: int_partidas__segmento
+    description: >
+      Partidas de viajes embarcados con el segmento vigente el día del embarque.
+      Si un cliente tuviera dos tramos que cubren la misma fecha, esta llave se duplicaría:
+      la prueba de unicidad protege contra traslapes de vigencia.
+    data_tests:
+      - llave_unica:
+          arguments:
+            columnas: [id_viaje, id_partida]
+    columns:
+      - name: segmento_cliente
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['DISTRIBUIDOR', 'CONSTRUCTORA', 'INDUSTRIAL', 'NO_IDENTIFICADO']
+
+  - name: int_viajes__puntualidad
+    description: Puntualidad por viaje embarcado con POD. Grano, un viaje.
+    columns:
+      - name: id_viaje
+        data_tests: [unique, not_null]
+      - name: a_tiempo
+        data_tests: [not_null]

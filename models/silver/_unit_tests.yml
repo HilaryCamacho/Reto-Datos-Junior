@@ -1,0 +1,125 @@
+version: 2
+
+# Pruebas unitarias: cada una alimenta un modelo con filas INVENTADAS y compara contra la
+# respuesta correcta calculada a mano. Cubren casos que los datos reales no ejercitan
+# (por ejemplo, ningún embarque cae justo el día de un cambio de segmento).
+unit_tests:
+
+  # --- Regla 6: vigencia del segmento --------------------------------------------------
+  - name: vigencia_cambio_cerca_de_medianoche_usa_fecha_local
+    description: >
+      El cambio se registra en UTC a las 05:30 del 1 de marzo, que en Monterrey (UTC-6) es
+      el 28 de febrero a las 23:30. El cambio aplica "desde el día en que se registra" en hora
+      local: debe empezar el 28 de febrero, no el 1 de marzo. La tercera versión repite el
+      segmento (ruido de re-extracción) y no debe crear un tramo nuevo.
+    model: int_clientes__vigencia
+    given:
+      - input: ref('stg_vta__clientes')
+        rows:
+          - {cla_cliente: 1, nom_cliente: Cliente A, segmento: DISTRIBUIDOR, cla_estado: NL, es_eliminacion: false, cdc_lsn: 1, cdc_actualizado_en: "2025-12-01 10:00:00"}
+          - {cla_cliente: 1, nom_cliente: Cliente A, segmento: CONSTRUCTORA, cla_estado: NL, es_eliminacion: false, cdc_lsn: 2, cdc_actualizado_en: "2026-03-01 05:30:00"}
+          - {cla_cliente: 1, nom_cliente: Cliente A, segmento: CONSTRUCTORA, cla_estado: NL, es_eliminacion: false, cdc_lsn: 3, cdc_actualizado_en: "2026-04-10 12:00:00"}
+    expect:
+      rows:
+        - {cla_cliente: 1, nro_tramo: 1, segmento: DISTRIBUIDOR, vigente_desde: "2025-12-01", vigente_hasta: "2026-02-28", es_primer_tramo: true}
+        - {cla_cliente: 1, nro_tramo: 2, segmento: CONSTRUCTORA, vigente_desde: "2026-02-28", vigente_hasta: null, es_primer_tramo: false}
+
+  - name: vigencia_una_baja_cierra_el_tramo
+    description: >
+      Si el cliente se da de baja, su tramo termina ese día (hasta exclusivo) y la baja
+      no crea un tramo nuevo.
+    model: int_clientes__vigencia
+    given:
+      - input: ref('stg_vta__clientes')
+        rows:
+          - {cla_cliente: 2, nom_cliente: Cliente B, segmento: INDUSTRIAL, cla_estado: TX, es_eliminacion: false, cdc_lsn: 10, cdc_actualizado_en: "2026-01-01 12:00:00"}
+          - {cla_cliente: 2, nom_cliente: Cliente B, segmento: INDUSTRIAL, cla_estado: TX, es_eliminacion: true, cdc_lsn: 11, cdc_actualizado_en: "2026-02-01 12:00:00"}
+    expect:
+      rows:
+        - {cla_cliente: 2, nro_tramo: 1, segmento: INDUSTRIAL, vigente_desde: "2026-01-01", vigente_hasta: "2026-02-01", es_primer_tramo: true}
+
+  # --- Reglas 6 y 7: segmento vigente el día del embarque -------------------------------
+  - name: segmento_en_bordes_de_vigencia_y_casos_especiales
+    description: >
+      Cliente 10 cambia de DISTRIBUIDOR a CONSTRUCTORA el 2026-02-10 (inclusivo).
+        viaje 1, 02-09: el día anterior  -> DISTRIBUIDOR
+        viaje 2, 02-10: el mismo día     -> CONSTRUCTORA (el cambio aplica desde el día que se registra)
+        viaje 3, 01-05: antes del primer registro del cliente -> primer segmento conocido (supuesto)
+      Cliente 20 existió y se dio de baja el 2026-02-01:
+        viaje 4, 03-01: -> NO_IDENTIFICADO (dado de baja)
+      Cliente 9999 nunca existió en el maestro:
+        viaje 5: -> NO_IDENTIFICADO (sus toneladas no se pierden)
+    model: int_partidas__segmento
+    given:
+      - input: ref('stg_fle__viajes_det')
+        rows:
+          - {id_viaje: 1, id_partida: 1, cla_cliente: 10, peso_kg: 1000}
+          - {id_viaje: 2, id_partida: 1, cla_cliente: 10, peso_kg: 2000}
+          - {id_viaje: 3, id_partida: 1, cla_cliente: 10, peso_kg: 3000}
+          - {id_viaje: 4, id_partida: 1, cla_cliente: 20, peso_kg: 4000}
+          - {id_viaje: 5, id_partida: 1, cla_cliente: 9999, peso_kg: 5000}
+          - {id_viaje: 6, id_partida: 1, cla_cliente: 10, peso_kg: 6000}
+      - input: ref('int_viajes__embarcados')
+        rows:
+          - {id_viaje: 1, cla_planta: 1, fecha_embarque: "2026-02-09"}
+          - {id_viaje: 2, cla_planta: 1, fecha_embarque: "2026-02-10"}
+          - {id_viaje: 3, cla_planta: 1, fecha_embarque: "2026-01-05"}
+          - {id_viaje: 4, cla_planta: 1, fecha_embarque: "2026-03-01"}
+          - {id_viaje: 5, cla_planta: 1, fecha_embarque: "2026-03-01"}
+          # el viaje 6 NO está en embarcados (PRO/CAN o borrado): su partida no debe aparecer
+      - input: ref('int_clientes__vigencia')
+        rows:
+          - {cla_cliente: 10, nro_tramo: 1, segmento: DISTRIBUIDOR, vigente_desde: "2026-01-10", vigente_hasta: "2026-02-10", es_primer_tramo: true}
+          - {cla_cliente: 10, nro_tramo: 2, segmento: CONSTRUCTORA, vigente_desde: "2026-02-10", es_primer_tramo: false}
+          - {cla_cliente: 20, nro_tramo: 1, segmento: INDUSTRIAL, vigente_desde: "2026-01-01", vigente_hasta: "2026-02-01", es_primer_tramo: true}
+    expect:
+      rows:
+        - {id_viaje: 1, id_partida: 1, segmento_cliente: DISTRIBUIDOR, origen_segmento: VIGENTE_EN_FECHA}
+        - {id_viaje: 2, id_partida: 1, segmento_cliente: CONSTRUCTORA, origen_segmento: VIGENTE_EN_FECHA}
+        - {id_viaje: 3, id_partida: 1, segmento_cliente: DISTRIBUIDOR, origen_segmento: PRIMER_SEGMENTO_CONOCIDO}
+        - {id_viaje: 4, id_partida: 1, segmento_cliente: NO_IDENTIFICADO, origen_segmento: CLIENTE_DADO_DE_BAJA}
+        - {id_viaje: 5, id_partida: 1, segmento_cliente: NO_IDENTIFICADO, origen_segmento: CLIENTE_NO_EXISTE_EN_MAESTRO}
+
+  # --- Regla 5: a tiempo compara FECHAS -------------------------------------------------
+  - name: a_tiempo_compara_fechas_no_timestamps
+    description: >
+      El compromiso es siempre 00:00. Una entrega el mismo día a las 18:00 está a tiempo
+      (<= compara fechas). Un día después, aunque sea 00:01, es tarde. Un viaje sin POD
+      no se evalúa (no aparece en la salida).
+    model: int_viajes__puntualidad
+    given:
+      - input: ref('int_viajes__embarcados')
+        rows:
+          - {id_viaje: 1, fecha_compromiso: "2026-03-10 00:00:00"}
+          - {id_viaje: 2, fecha_compromiso: "2026-03-10 00:00:00"}
+          - {id_viaje: 3, fecha_compromiso: "2026-03-10 00:00:00"}
+          - {id_viaje: 4, fecha_compromiso: "2026-03-10 00:00:00"}
+      - input: ref('stg_fle__entregas')
+        rows:
+          - {id_viaje: 1, fecha_entrega: "2026-03-10 18:00:00"}
+          - {id_viaje: 2, fecha_entrega: "2026-03-11 00:01:00"}
+          - {id_viaje: 3, fecha_entrega: "2026-03-09 23:59:00"}
+    expect:
+      rows:
+        - {id_viaje: 1, a_tiempo: true}
+        - {id_viaje: 2, a_tiempo: false}
+        - {id_viaje: 3, a_tiempo: true}
+
+  # --- Reglas 1 y 2: fecha de embarque y estatus ----------------------------------------
+  - name: embarcados_fecha_real_con_respaldo_y_solo_tra_ent
+    description: >
+      Solo TRA y ENT cuentan. La fecha real manda aunque la final caiga en otro mes
+      (viaje 1: sale el 31 de enero, el documento cierra el 1 de febrero -> enero).
+      Sin fecha real se usa la final (viaje 2). PRO y CAN no aparecen.
+    model: int_viajes__embarcados
+    given:
+      - input: ref('stg_fle__viajes')
+        rows:
+          - {id_viaje: 1, cla_planta: 1, estatus: ENT, fecha_real_embarque: "2026-01-31 23:30:00", fecha_embarque_final: "2026-02-01 08:00:00", costo_flete_mxn: 1000.00}
+          - {id_viaje: 2, cla_planta: 2, estatus: TRA, fecha_embarque_final: "2026-03-15 10:00:00", costo_flete_mxn: 2000.00}
+          - {id_viaje: 3, cla_planta: 1, estatus: PRO, fecha_embarque_final: "2026-03-15 10:00:00"}
+          - {id_viaje: 4, cla_planta: 1, estatus: CAN}
+    expect:
+      rows:
+        - {id_viaje: 1, fecha_embarque: "2026-01-31", origen_fecha_embarque: FechaRealEmbarque}
+        - {id_viaje: 2, fecha_embarque: "2026-03-15", origen_fecha_embarque: FechaEmbarqueFinal}
