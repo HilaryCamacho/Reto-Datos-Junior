@@ -9,6 +9,9 @@ Pipeline **dbt + DuckDB** que lleva la réplica CDC de fletes, clientes y planta
 
 - 📋 **Problemas encontrados en los datos:** [`HALLAZGOS.md`](HALLAZGOS.md) (19 hallazgos con su impacto medido)
 - 📄 Enunciado original: [`docs/enunciado-reto.md`](docs/enunciado-reto.md)
+- 📊 **Dashboard:** abre [`reporte/dashboard.html`](reporte/dashboard.html) en el navegador (un solo archivo, sin internet ni instalación; modo claro y oscuro)
+
+[![Vista previa del dashboard](reporte/dashboard.png)](reporte/dashboard.html)
 
 ## Cómo correrlo
 
@@ -52,6 +55,7 @@ Se ejecutan desde la raíz con el entorno virtual activo. Las que prueban cosas 
 | `python tools/probar_pruebas.py` | Introduce 14 errores a propósito y comprueba que las pruebas los detectan |
 | `python tools/analisis_impacto.py` | Calcula el impacto de cada hallazgo (correcto vs. ingenuo); alimenta `HALLAZGOS.md` |
 | `python tools/perfilar_tabla.py <csv> --llave <col>` | **Perfila cualquier tabla CSV** y señala dónde mirar (ver abajo) |
+| `python tools/generar_dashboard.py` | Regenera `reporte/dashboard.html` desde los marts y el análisis de impacto (ver abajo) |
 
 ### Perfilar una tabla nueva
 
@@ -68,6 +72,17 @@ python tools/perfilar_tabla.py data/replica/carga_1/fle_viaje.csv --llave IdViaj
 Revisa: grano y duplicados (exactos y con contenido distinto), versiones y borrados CDC, nulos y blancos, tipos mezclados, espacios y variantes de mayúsculas, formatos de fecha distintos, valores centinela (`1900-01-01`, `-1`, `N/A`…), fechas futuras, huérfanos contra otra tabla y coherencia entre columnas. Con columnas CDC y una llave perfila el **estado vigente** (última versión, sin borrados); `--crudo` perfila todas las filas.
 
 Cómo sé que funciona: sobre las tablas reales **redescubre los hallazgos que había encontrado a mano** (103 y 101 copias exactas, 20 borrados, los 3 clientes huérfanos con sus 82 filas, el centinela 1900) y sobre una tabla sintética con 12 problemas sembrados detecta los 12. Sus límites: las listas de centinelas son heurísticas y solo lee CSV.
+
+### Dashboard
+
+`reporte/dashboard.html` presenta los dos marts y, en la misma página, el costo de los problemas de calidad de datos:
+
+- **Cifra principal y tarjetas:** % de toneladas a tiempo, viajes, toneladas, flete total, flete por tonelada y toneladas sin segmento identificado.
+- **Embarques:** toneladas por planta y mes (misma escala en las cuatro plantas) y un mapa de calor del flete por tonelada.
+- **Cumplimiento:** un gráfico por segmento contra el total del mes.
+- **Calidad de datos:** el embudo de 5,584 filas replicadas a 1,689 viajes, el ranking de cuánto se equivocaría cada indicador si se ignorara cada hallazgo, y la matriz de toneladas que cambiarían de segmento.
+
+Decisiones: es **un solo archivo sin dependencias** (SVG y CSS escritos a mano, sin librerías), para abrirlo sin internet; cada gráfico tiene una **tabla gemela** y tooltips que también funcionan con teclado, de modo que ningún valor depende del puntero; y usa **una sola familia de color (vino y rosa)**: un trío categórico para los segmentos (vino, frambuesa y rosa claro) **buscado y validado con el validador del skill** en el modo más estricto (todos los pares: separación para daltonismo ≥ 13 y visión normal ≥ 17 frente a mínimos de 8 y 15), más rampas ordinales y secuenciales de la misma familia. Hay una advertencia conocida: el rosa claro queda en 2.1:1 de contraste sobre el fondo claro, por lo que el segmento se identifica también por el título, el valor al final de la línea y la tabla gemela, y nunca solo por el color. Se **regenera de forma determinista** (mismos datos, mismo archivo, byte por byte) y el CI falla si el archivo versionado quedó desactualizado.
 
 ## Cómo está armado
 
@@ -93,6 +108,7 @@ models/marts/     embarques_mensual · cumplimiento_entrega
 macros/           cargar_landing · generate_schema_name · a_fecha_local · independiente_landing (solo pruebas)
 tests/            llave_unica (genérica) · negocio/ (pruebas de reglas de negocio)
 tools/            herramientas de verificación y análisis
+reporte/          dashboard.html (+ vista previa) e impacto_hallazgos.json
 ```
 
 ## Decisiones y por qué
@@ -155,6 +171,7 @@ Lo que agregué sin que lo pidieran, y por qué:
 2. **Análisis de impacto** (`tools/analisis_impacto.py`). Calcula, para cada hallazgo, el resultado correcto contra el ingenuo. Convierte "encontré un problema" en "este problema duplicaría el flete". Fue lo que me permitió **corregir mis propias hipótesis** (por ejemplo, el centinela `1900-01-01` no era un problema de viajes `PRO`: afecta a 226 viajes embarcados).
 3. **Verificador de idempotencia** (`tools/verificar_idempotencia.py`). Compara el hash del contenido de las 15 tablas entre dos corridas desde cero, no solo el conteo de filas.
 4. **Perfilador de tablas** (`tools/perfilar_tabla.py`). Convierte la revisión manual que hice en una herramienta reutilizable: el reto dice que una parte de la evaluación es revisar *una tabla nueva*, y esta lista de preguntas es la misma que yo seguiría a mano. Al validarla contra mis propios hallazgos corrigió además una afirmación mía imprecisa (ver H01).
+5. **Dashboard** (`reporte/dashboard.html`). Los marts son números; un tablero los vuelve una conversación con Logística, y poner junto a ellos el costo de los hallazgos muestra *por qué* importa la limpieza. Lo hice autocontenido y verificable (cifras contrastadas contra la base, salida determinista, revisión en escritorio y móvil real).
 
 ## Lo que dejé fuera
 
