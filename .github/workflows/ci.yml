@@ -1,0 +1,46 @@
+name: CI
+
+# Verifica en cada Pull Request y en cada cambio a main que el proyecto:
+#   1) construye y pasa todas las pruebas desde cero,
+#   2) se puede correr dos veces sin duplicar nada (idempotencia),
+#   3) tiene pruebas que sí detectan errores (se sabotean a propósito).
+# No usa secretos ni servicios externos: DuckDB corre dentro del propio runner.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dbt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: pip
+
+      - name: Instalar dependencias (versiones fijadas)
+        run: pip install -r requirements.txt
+
+      - name: dbt build, primera corrida (desde cero)
+        run: dbt build
+
+      - name: dbt build, segunda corrida (idempotencia)
+        run: dbt build
+
+      - name: Verificar idempotencia (hash del contenido de las 15 tablas)
+        run: python tools/verificar_idempotencia.py
+
+      - name: Prueba de las pruebas (14 errores introducidos a propósito)
+        run: python tools/probar_pruebas.py
