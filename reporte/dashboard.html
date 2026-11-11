@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desempeño de embarques</title>
+<style>
+:root{color-scheme:light;--page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,0.10);--good:#006300;--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--q0:#cde2fb;--qi0:#0b0b0b;--q1:#9ec5f4;--qi1:#0b0b0b;--q2:#6da7ec;--qi2:#0b0b0b;--q3:#3987e5;--qi3:#0b0b0b;--q4:#256abf;--qi4:#ffffff;--q5:#184f95;--qi5:#ffffff;--q6:#0d366b;--qi6:#ffffff;--o0:#86b6ef;--o1:#5598e7;--o2:#2a78d6;--o3:#1c5cab;--o4:#104281;}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,0.10);--good:#0ca30c;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--q0:#0d366b;--qi0:#ffffff;--q1:#104281;--qi1:#ffffff;--q2:#184f95;--qi2:#ffffff;--q3:#256abf;--qi3:#ffffff;--q4:#3987e5;--qi4:#0b0b0b;--q5:#6da7ec;--qi5:#0b0b0b;--q6:#9ec5f4;--qi6:#0b0b0b;--o0:#184f95;--o1:#256abf;--o2:#3987e5;--o3:#6da7ec;--o4:#9ec5f4;}}
+:root[data-theme="dark"]{color-scheme:dark;--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,0.10);--good:#0ca30c;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--q0:#0d366b;--qi0:#ffffff;--q1:#104281;--qi1:#ffffff;--q2:#184f95;--qi2:#ffffff;--q3:#256abf;--qi3:#ffffff;--q4:#3987e5;--qi4:#0b0b0b;--q5:#6da7ec;--qi5:#0b0b0b;--q6:#9ec5f4;--qi6:#0b0b0b;--o0:#184f95;--o1:#256abf;--o2:#3987e5;--o3:#6da7ec;--o4:#9ec5f4;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 16px 56px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;background:var(--grid);padding:1px 5px;border-radius:4px}
+a{color:var(--s1)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}
+.eyebrow{margin:0 0 4px;color:var(--ink2);font-size:13px}
+h1{margin:0;font-size:28px;font-weight:650;letter-spacing:-.01em}
+h2{margin:0 0 6px;font-size:20px;font-weight:650}
+h3{margin:24px 0 8px;font-size:15px;font-weight:650}
+.lead{margin:6px 0 0;color:var(--ink2);font-size:14px;max-width:80ch}
+.note{margin:0 0 8px;color:var(--muted);font-size:13px;max-width:80ch}
+.btn{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn:hover{background:var(--grid)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px}
+.kpis{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1.6fr);gap:16px;align-items:stretch}
+.kpis .card{margin-top:0}
+@media (max-width:860px){.kpis{grid-template-columns:1fr}}
+.hero-card{display:flex;align-items:center}
+.hero .lab{color:var(--ink2);font-size:14px}
+.hero-num{font-size:68px;line-height:1.05;font-weight:600;letter-spacing:-.02em;margin:2px 0 10px}
+.hero-unit{font-size:34px;color:var(--ink2);font-weight:500}
+.seg-bar{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;margin:4px 0 10px}
+.seg-bar span{display:block;height:100%}
+.hero-sub{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;font-size:14px;color:var(--ink2)}
+.hero-sub b{color:var(--ink);font-weight:600}
+.key{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.hero-foot{margin-top:10px;color:var(--muted);font-size:12.5px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column}
+.tile .lab{color:var(--ink2);font-size:13px}
+.tile .val{font-size:26px;font-weight:600;margin:2px 0}
+.tile .sub{color:var(--muted);font-size:12px;margin-bottom:6px;min-height:2.6em}
+.spark{width:100%;max-width:130px;height:auto;margin-top:auto}
+.sp-line{fill:none;stroke:var(--muted);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.sp-dot{fill:var(--s1);stroke:var(--surface);stroke-width:2}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.panel{min-width:0}
+svg{width:100%;height:auto;display:block;overflow:visible}
+svg text{font-family:inherit;font-size:11.5px;fill:var(--ink2)}
+.t-ink{fill:var(--ink)} .t-sec{fill:var(--ink2)} .t-mut{fill:var(--muted)}
+.t-title{font-size:13px;font-weight:600} .t-val{font-weight:600}
+.gl{stroke:var(--grid);stroke-width:1} .ax{stroke:var(--axis);stroke-width:1}
+.bar{fill:var(--s1)}
+.mark{outline:none;cursor:default}
+.mark:hover .bar,.mark:focus .bar{opacity:.78}
+.mark:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.hit{outline:none}
+.xh{stroke:var(--axis);stroke-width:1;opacity:0}
+.hit:hover .xh,.hit:focus .xh{opacity:1}
+.ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ln-total{fill:none;stroke:var(--muted);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.dot{stroke:var(--surface);stroke-width:2}
+.heat{max-width:760px}
+.hm{border-collapse:separate;border-spacing:2px;width:100%;table-layout:fixed}
+.hm th,.hm td{padding:0;border:0;white-space:normal}
+.hm thead th{font-weight:400;color:var(--muted);font-size:12px;text-align:center;padding-bottom:2px}
+.hm thead th:first-child{width:132px}
+.hm tbody th{text-align:right;font-weight:400;font-size:13px;color:var(--ink);padding-right:10px}
+.hm-cell{border-radius:4px;padding:11px 0;text-align:center;font-weight:600;font-size:13px}
+.hm-cell:hover,.hm-cell:focus{outline:2px solid var(--ink);outline-offset:-2px}
+.bq0{background:var(--q0);color:var(--qi0)}
+.bq1{background:var(--q1);color:var(--qi1)}
+.bq2{background:var(--q2);color:var(--qi2)}
+.bq3{background:var(--q3);color:var(--qi3)}
+.bq4{background:var(--q4);color:var(--qi4)}
+.bq5{background:var(--q5);color:var(--qi5)}
+.bq6{background:var(--q6);color:var(--qi6)}
+.scale{display:flex;align-items:center;gap:8px;margin:10px 0 4px 144px;max-width:560px;font-size:12px;color:var(--ink2)}
+.sc-bar{display:flex;flex:1;max-width:320px}
+.sc-step{flex:1;height:10px;display:block}
+.sc-step:first-child{border-radius:4px 0 0 4px}.sc-step:last-child{border-radius:0 4px 4px 0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:center;margin:12px 0 4px;font-size:13px;color:var(--ink2)}
+.lg{display:inline-flex;align-items:center;gap:8px}
+.lg svg{width:24px;height:8px;flex:none;display:inline-block}
+.lg-note{color:var(--muted)}
+.funnel,.ranked{margin-top:6px}
+.fn-row{display:grid;grid-template-columns:minmax(180px,1.1fr) minmax(80px,1.6fr) 64px;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--grid)}
+.fn-lab b{display:block;font-weight:600;font-size:14px}
+.fn-lab span{display:block;color:var(--muted);font-size:12.5px}
+.fn-track,.rk-track{height:14px}
+.fn-bar,.rk-bar{display:block;height:14px;border-radius:0 4px 4px 0}
+.fn-val,.rk-val{font-size:14px;font-weight:600}
+.fn-val{text-align:right}
+.rk-row{display:grid;grid-template-columns:minmax(220px,1.3fr) minmax(80px,1.2fr) minmax(190px,1.2fr);gap:12px;align-items:center;padding:7px 0;border-top:1px solid var(--grid)}
+.rk-lab{font-size:14px}
+.rk-id{display:inline-block;min-width:2.8em;color:var(--muted);font-size:12px;font-weight:600}
+.rk-bar{background:var(--s1);height:10px}
+.rk-track{height:10px}
+.rk-val{font-weight:500;font-size:13px;color:var(--ink2)}
+@media (max-width:760px){.fn-row{grid-template-columns:1fr 56px}.fn-track{grid-column:1/3;grid-row:2}.rk-row{grid-template-columns:1fr}.rk-val{font-size:12.5px}}
+.mark.fn-bar:hover,.mark.rk-bar:hover,.mark.fn-bar:focus,.mark.rk-bar:focus{opacity:.8}
+.mx{display:grid;grid-template-columns:130px repeat(3,minmax(0,1fr));gap:2px;max-width:640px;margin-top:6px}
+.mx-colh{padding:4px 8px;font-size:12.5px;color:var(--ink2);text-align:center}
+.mx-rowh{padding:10px 8px 10px 0;font-size:13px;color:var(--ink2);text-align:right;align-self:center}
+.mx-cell{border-radius:4px;padding:12px 8px;text-align:center;display:flex;gap:4px;align-items:baseline;justify-content:center}
+.mx-cell b{font-size:15px;font-weight:600}.mx-cell span{font-size:11px;opacity:.85}
+.mx-diag{background:transparent;color:var(--muted);border:1px solid var(--grid)}
+.twin{margin-top:14px;font-size:13px}
+.twin summary{cursor:pointer;color:var(--ink2);padding:4px 0}
+.tbl-wrap{overflow-x:auto;margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 10px;border-top:1px solid var(--grid);text-align:left;white-space:nowrap}
+th{color:var(--ink2);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.foot{margin-top:24px;color:var(--muted);font-size:12.5px;max-width:90ch}
+#tip{position:fixed;z-index:20;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--axis);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:280px}
+#tip[hidden]{display:none}
+.tip-h{font-weight:600;margin-bottom:4px}
+.tip-r{display:flex;justify-content:space-between;gap:14px}
+.tip-r span{color:var(--ink2)} .tip-r b{font-weight:600}
+@media (max-width:760px){.scale{margin-left:0}.hm thead th:first-child{width:76px}.hm tbody th{font-size:11.5px;padding-right:6px}.hm-cell{font-size:11.5px;padding:9px 0}.mx{grid-template-columns:84px repeat(3,minmax(0,1fr))}.mx-colh{font-size:11.5px;padding:4px 1px}.mx-rowh{font-size:12px;padding-right:6px}}
+@media (forced-colors:active){.bar,.fn-bar,.rk-bar{forced-color-adjust:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div><p class="eyebrow">Dirección de Logística · Grupo DEACERO (datos ficticios del reto)</p>
+  <h1>Desempeño de embarques</h1>
+  <p class="lead">ene 2026 a jun 2026 · cuatro plantas · fuente: <code>mart_logistica</code> (<code>embarques_mensual</code> y <code>cumplimiento_entrega</code>)</p></div>
+  <button id="theme" class="btn" type="button" aria-label="Cambiar entre tema claro y oscuro">Tema</button>
+</header>
+
+<section class="kpis" aria-label="Indicadores principales">
+  <div class="card hero-card"><div class="hero"><div class="lab">Toneladas entregadas a tiempo</div><div class="hero-num">71.8<span class="hero-unit"> %</span></div><div class="seg-bar" role="img" aria-label="32,579 t a tiempo y 12,816 t tarde"><span style="width:71.8%;background:var(--s1)"></span><span style="width:28.2%;background:var(--axis)"></span></div><div class="hero-sub"><span class="key key-fill" style="background:var(--s1)"></span>A tiempo <b>32,579 t</b><span class="key key-fill" style="background:var(--axis)"></span>Tarde <b>12,816 t</b></div><div class="hero-foot">Sobre 45,396 t entregadas con comprobante (POD), por mes de embarque, ene 2026 a jun 2026.</div></div></div>
+  <div class="tiles"><div class="tile"><div class="lab">Viajes embarcados</div><div class="val">1,689</div><div class="sub">230 a 302 por mes</div><svg class="spark" viewBox="0 0 120 32" aria-hidden="true"><path d="M4.0,4.0 L26.4,12.0 L48.8,6.0 L71.2,28.0 L93.6,7.3 L116.0,7.7" class="sp-line"/><circle cx="116.0" cy="7.7" r="4" class="sp-dot"/></svg></div><div class="tile"><div class="lab">Toneladas embarcadas</div><div class="val">47,092 t</div><div class="sub">6,471 a 8,353 t por mes</div><svg class="spark" viewBox="0 0 120 32" aria-hidden="true"><path d="M4.0,4.0 L26.4,13.1 L48.8,5.0 L71.2,28.0 L93.6,5.2 L116.0,7.3" class="sp-line"/><circle cx="116.0" cy="7.3" r="4" class="sp-dot"/></svg></div><div class="tile"><div class="lab">Flete total</div><div class="val">$28.4 M</div><div class="sub">MXN, un monto por viaje</div><svg class="spark" viewBox="0 0 120 32" aria-hidden="true"><path d="M4.0,4.0 L26.4,14.8 L48.8,6.0 L71.2,28.0 L93.6,5.7 L116.0,8.7" class="sp-line"/><circle cx="116.0" cy="8.7" r="4" class="sp-dot"/></svg></div><div class="tile"><div class="lab">Flete por tonelada</div><div class="val">$604</div><div class="sub">MXN/t, de $598 a $614 por mes</div><svg class="spark" viewBox="0 0 120 32" aria-hidden="true"><path d="M4.0,15.3 L26.4,28.0 L48.8,23.8 L71.2,4.0 L93.6,18.7 L116.0,27.2" class="sp-line"/><circle cx="116.0" cy="27.2" r="4" class="sp-dot"/></svg></div><div class="tile"><div class="lab">Sin segmento identificado</div><div class="val">983 t</div><div class="sub">2.2 % de lo entregado</div><svg class="spark" viewBox="0 0 120 32" aria-hidden="true"><path d="M4.0,28.0 L26.4,4.0 L48.8,9.9 L71.2,7.6 L93.6,13.2 L116.0,19.3" class="sp-line"/><circle cx="116.0" cy="19.3" r="4" class="sp-dot"/></svg></div></div>
+</section>
+
+<section class="card" id="embarques">
+  <h2>Embarques por planta</h2>
+  <p class="lead">Planta Monterrey concentra 38 % de las toneladas del semestre. El flete por tonelada es muy estable: va de $582 a $624 (±3.5 % alrededor de $604), así que las diferencias entre plantas y meses son pequeñas.</p>
+  <h3>Toneladas embarcadas por mes</h3>
+  <div class="grid2"><div class="panel"><svg viewBox="0 0 360 214" role="img" aria-label="Toneladas embarcadas por mes, Planta Monterrey"><text x="48" y="16" class="t-ink t-title">Planta Monterrey</text><text x="348" y="16" class="t-sec" text-anchor="end">17,834 t en el semestre</text><line x1="48" x2="348" y1="184.0" y2="184.0" class="ax"/><text x="40" y="188.0" text-anchor="end" class="t-mut">0</text><line x1="48" x2="348" y1="110.0" y2="110.0" class="gl"/><text x="40" y="114.0" text-anchor="end" class="t-mut">2,000</text><line x1="48" x2="348" y1="36.0" y2="36.0" class="gl"/><text x="40" y="40.0" text-anchor="end" class="t-mut">4,000</text><g class="mark" tabindex="0" data-tip="Planta Monterrey · ene 2026
+Toneladas|3,089.4 t
+Viajes|112
+Flete|$1,860,872 MXN
+Flete por tonelada|$602.34"><rect x="48.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M61.0,184.0 V73.7 Q61.0,69.7 65.0,69.7 H81.0 Q85.0,69.7 85.0,73.7 V184.0 Z"/></g><text x="73.0" y="202" text-anchor="middle" class="t-mut">ene</text><g class="mark" tabindex="0" data-tip="Planta Monterrey · feb 2026
+Toneladas|2,480.7 t
+Viajes|92
+Flete|$1,499,664 MXN
+Flete por tonelada|$604.54"><rect x="98.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M111.0,184.0 V96.2 Q111.0,92.2 115.0,92.2 H131.0 Q135.0,92.2 135.0,96.2 V184.0 Z"/></g><text x="123.0" y="202" text-anchor="middle" class="t-mut">feb</text><g class="mark" tabindex="0" data-tip="Planta Monterrey · mar 2026
+Toneladas|3,507.1 t
+Viajes|126
+Flete|$2,084,531 MXN
+Flete por tonelada|$594.38"><rect x="148.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M161.0,184.0 V58.2 Q161.0,54.2 165.0,54.2 H181.0 Q185.0,54.2 185.0,58.2 V184.0 Z"/></g><text x="173.0" y="202" text-anchor="middle" class="t-mut">mar</text><text x="173.0" y="48.2" text-anchor="middle" class="t-sec t-val">3,507</text><g class="mark" tabindex="0" data-tip="Planta Monterrey · abr 2026
+Toneladas|2,446.6 t
+Viajes|85
+Flete|$1,510,765 MXN
+Flete por tonelada|$617.49"><rect x="198.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M211.0,184.0 V97.5 Q211.0,93.5 215.0,93.5 H231.0 Q235.0,93.5 235.0,97.5 V184.0 Z"/></g><text x="223.0" y="202" text-anchor="middle" class="t-mut">abr</text><g class="mark" tabindex="0" data-tip="Planta Monterrey · may 2026
+Toneladas|3,290.3 t
+Viajes|114
+Flete|$1,941,756 MXN
+Flete por tonelada|$590.14"><rect x="248.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M261.0,184.0 V66.3 Q261.0,62.3 265.0,62.3 H281.0 Q285.0,62.3 285.0,66.3 V184.0 Z"/></g><text x="273.0" y="202" text-anchor="middle" class="t-mut">may</text><g class="mark" tabindex="0" data-tip="Planta Monterrey · jun 2026
+Toneladas|3,019.8 t
+Viajes|108
+Flete|$1,794,784 MXN
+Flete por tonelada|$594.33"><rect x="298.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M311.0,184.0 V76.3 Q311.0,72.3 315.0,72.3 H331.0 Q335.0,72.3 335.0,76.3 V184.0 Z"/></g><text x="323.0" y="202" text-anchor="middle" class="t-mut">jun</text></svg></div><div class="panel"><svg viewBox="0 0 360 214" role="img" aria-label="Toneladas embarcadas por mes, Planta Celaya"><text x="48" y="16" class="t-ink t-title">Planta Celaya</text><text x="348" y="16" class="t-sec" text-anchor="end">13,326 t en el semestre</text><line x1="48" x2="348" y1="184.0" y2="184.0" class="ax"/><text x="40" y="188.0" text-anchor="end" class="t-mut">0</text><line x1="48" x2="348" y1="110.0" y2="110.0" class="gl"/><text x="40" y="114.0" text-anchor="end" class="t-mut">2,000</text><line x1="48" x2="348" y1="36.0" y2="36.0" class="gl"/><text x="40" y="40.0" text-anchor="end" class="t-mut">4,000</text><g class="mark" tabindex="0" data-tip="Planta Celaya · ene 2026
+Toneladas|2,205.0 t
+Viajes|80
+Flete|$1,341,197 MXN
+Flete por tonelada|$608.27"><rect x="48.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M61.0,184.0 V106.4 Q61.0,102.4 65.0,102.4 H81.0 Q85.0,102.4 85.0,106.4 V184.0 Z"/></g><text x="73.0" y="202" text-anchor="middle" class="t-mut">ene</text><g class="mark" tabindex="0" data-tip="Planta Celaya · feb 2026
+Toneladas|2,200.5 t
+Viajes|80
+Flete|$1,321,797 MXN
+Flete por tonelada|$600.68"><rect x="98.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M111.0,184.0 V106.6 Q111.0,102.6 115.0,102.6 H131.0 Q135.0,102.6 135.0,106.6 V184.0 Z"/></g><text x="123.0" y="202" text-anchor="middle" class="t-mut">feb</text><g class="mark" tabindex="0" data-tip="Planta Celaya · mar 2026
+Toneladas|2,314.8 t
+Viajes|84
+Flete|$1,433,264 MXN
+Flete por tonelada|$619.18"><rect x="148.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M161.0,184.0 V102.4 Q161.0,98.4 165.0,98.4 H181.0 Q185.0,98.4 185.0,102.4 V184.0 Z"/></g><text x="173.0" y="202" text-anchor="middle" class="t-mut">mar</text><text x="173.0" y="92.4" text-anchor="middle" class="t-sec t-val">2,315</text><g class="mark" tabindex="0" data-tip="Planta Celaya · abr 2026
+Toneladas|1,997.8 t
+Viajes|71
+Flete|$1,218,025 MXN
+Flete por tonelada|$609.68"><rect x="198.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M211.0,184.0 V114.1 Q211.0,110.1 215.0,110.1 H231.0 Q235.0,110.1 235.0,114.1 V184.0 Z"/></g><text x="223.0" y="202" text-anchor="middle" class="t-mut">abr</text><g class="mark" tabindex="0" data-tip="Planta Celaya · may 2026
+Toneladas|2,305.8 t
+Viajes|83
+Flete|$1,405,282 MXN
+Flete por tonelada|$609.46"><rect x="248.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M261.0,184.0 V102.7 Q261.0,98.7 265.0,98.7 H281.0 Q285.0,98.7 285.0,102.7 V184.0 Z"/></g><text x="273.0" y="202" text-anchor="middle" class="t-mut">may</text><g class="mark" tabindex="0" data-tip="Planta Celaya · jun 2026
+Toneladas|2,302.2 t
+Viajes|82
+Flete|$1,393,196 MXN
+Flete por tonelada|$605.16"><rect x="298.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M311.0,184.0 V102.8 Q311.0,98.8 315.0,98.8 H331.0 Q335.0,98.8 335.0,102.8 V184.0 Z"/></g><text x="323.0" y="202" text-anchor="middle" class="t-mut">jun</text></svg></div><div class="panel"><svg viewBox="0 0 360 214" role="img" aria-label="Toneladas embarcadas por mes, Planta Saltillo"><text x="48" y="16" class="t-ink t-title">Planta Saltillo</text><text x="348" y="16" class="t-sec" text-anchor="end">9,743 t en el semestre</text><line x1="48" x2="348" y1="184.0" y2="184.0" class="ax"/><text x="40" y="188.0" text-anchor="end" class="t-mut">0</text><line x1="48" x2="348" y1="110.0" y2="110.0" class="gl"/><text x="40" y="114.0" text-anchor="end" class="t-mut">2,000</text><line x1="48" x2="348" y1="36.0" y2="36.0" class="gl"/><text x="40" y="40.0" text-anchor="end" class="t-mut">4,000</text><g class="mark" tabindex="0" data-tip="Planta Saltillo · ene 2026
+Toneladas|2,063.2 t
+Viajes|73
+Flete|$1,251,888 MXN
+Flete por tonelada|$606.76"><rect x="48.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M61.0,184.0 V111.7 Q61.0,107.7 65.0,107.7 H81.0 Q85.0,107.7 85.0,111.7 V184.0 Z"/></g><text x="73.0" y="202" text-anchor="middle" class="t-mut">ene</text><text x="73.0" y="101.7" text-anchor="middle" class="t-sec t-val">2,063</text><g class="mark" tabindex="0" data-tip="Planta Saltillo · feb 2026
+Toneladas|1,713.4 t
+Viajes|61
+Flete|$1,026,475 MXN
+Flete por tonelada|$599.10"><rect x="98.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M111.0,184.0 V124.6 Q111.0,120.6 115.0,120.6 H131.0 Q135.0,120.6 135.0,124.6 V184.0 Z"/></g><text x="123.0" y="202" text-anchor="middle" class="t-mut">feb</text><g class="mark" tabindex="0" data-tip="Planta Saltillo · mar 2026
+Toneladas|1,552.0 t
+Viajes|55
+Flete|$909,943 MXN
+Flete por tonelada|$586.31"><rect x="148.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M161.0,184.0 V130.6 Q161.0,126.6 165.0,126.6 H181.0 Q185.0,126.6 185.0,130.6 V184.0 Z"/></g><text x="173.0" y="202" text-anchor="middle" class="t-mut">mar</text><g class="mark" tabindex="0" data-tip="Planta Saltillo · abr 2026
+Toneladas|1,133.3 t
+Viajes|41
+Flete|$706,114 MXN
+Flete por tonelada|$623.03"><rect x="198.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M211.0,184.0 V146.1 Q211.0,142.1 215.0,142.1 H231.0 Q235.0,142.1 235.0,146.1 V184.0 Z"/></g><text x="223.0" y="202" text-anchor="middle" class="t-mut">abr</text><g class="mark" tabindex="0" data-tip="Planta Saltillo · may 2026
+Toneladas|1,634.6 t
+Viajes|58
+Flete|$1,002,064 MXN
+Flete por tonelada|$613.05"><rect x="248.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M261.0,184.0 V127.5 Q261.0,123.5 265.0,123.5 H281.0 Q285.0,123.5 285.0,127.5 V184.0 Z"/></g><text x="273.0" y="202" text-anchor="middle" class="t-mut">may</text><g class="mark" tabindex="0" data-tip="Planta Saltillo · jun 2026
+Toneladas|1,646.7 t
+Viajes|59
+Flete|$976,248 MXN
+Flete por tonelada|$592.84"><rect x="298.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M311.0,184.0 V127.1 Q311.0,123.1 315.0,123.1 H331.0 Q335.0,123.1 335.0,127.1 V184.0 Z"/></g><text x="323.0" y="202" text-anchor="middle" class="t-mut">jun</text></svg></div><div class="panel"><svg viewBox="0 0 360 214" role="img" aria-label="Toneladas embarcadas por mes, Planta Houston"><text x="48" y="16" class="t-ink t-title">Planta Houston</text><text x="348" y="16" class="t-sec" text-anchor="end">6,188 t en el semestre</text><line x1="48" x2="348" y1="184.0" y2="184.0" class="ax"/><text x="40" y="188.0" text-anchor="end" class="t-mut">0</text><line x1="48" x2="348" y1="110.0" y2="110.0" class="gl"/><text x="40" y="114.0" text-anchor="end" class="t-mut">2,000</text><line x1="48" x2="348" y1="36.0" y2="36.0" class="gl"/><text x="40" y="40.0" text-anchor="end" class="t-mut">4,000</text><g class="mark" tabindex="0" data-tip="Planta Houston · ene 2026
+Toneladas|995.6 t
+Viajes|37
+Flete|$611,825 MXN
+Flete por tonelada|$614.54"><rect x="48.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M61.0,184.0 V151.2 Q61.0,147.2 65.0,147.2 H81.0 Q85.0,147.2 85.0,151.2 V184.0 Z"/></g><text x="73.0" y="202" text-anchor="middle" class="t-mut">ene</text><g class="mark" tabindex="0" data-tip="Planta Houston · feb 2026
+Toneladas|1,247.2 t
+Viajes|45
+Flete|$725,448 MXN
+Flete por tonelada|$581.65"><rect x="98.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M111.0,184.0 V141.9 Q111.0,137.9 115.0,137.9 H131.0 Q135.0,137.9 135.0,141.9 V184.0 Z"/></g><text x="123.0" y="202" text-anchor="middle" class="t-mut">feb</text><text x="123.0" y="131.9" text-anchor="middle" class="t-sec t-val">1,247</text><g class="mark" tabindex="0" data-tip="Planta Houston · mar 2026
+Toneladas|898.4 t
+Viajes|31
+Flete|$544,752 MXN
+Flete por tonelada|$606.39"><rect x="148.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M161.0,184.0 V154.8 Q161.0,150.8 165.0,150.8 H181.0 Q185.0,150.8 185.0,154.8 V184.0 Z"/></g><text x="173.0" y="202" text-anchor="middle" class="t-mut">mar</text><g class="mark" tabindex="0" data-tip="Planta Houston · abr 2026
+Toneladas|893.1 t
+Viajes|33
+Flete|$535,295 MXN
+Flete por tonelada|$599.35"><rect x="198.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M211.0,184.0 V155.0 Q211.0,151.0 215.0,151.0 H231.0 Q235.0,151.0 235.0,155.0 V184.0 Z"/></g><text x="223.0" y="202" text-anchor="middle" class="t-mut">abr</text><g class="mark" tabindex="0" data-tip="Planta Houston · may 2026
+Toneladas|1,025.2 t
+Viajes|37
+Flete|$640,207 MXN
+Flete por tonelada|$624.47"><rect x="248.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M261.0,184.0 V150.1 Q261.0,146.1 265.0,146.1 H281.0 Q285.0,146.1 285.0,150.1 V184.0 Z"/></g><text x="273.0" y="202" text-anchor="middle" class="t-mut">may</text><g class="mark" tabindex="0" data-tip="Planta Houston · jun 2026
+Toneladas|1,128.9 t
+Viajes|42
+Flete|$686,199 MXN
+Flete por tonelada|$607.82"><rect x="298.0" y="36" width="50.0" height="148" fill="transparent"/><path class="bar" d="M311.0,184.0 V146.2 Q311.0,142.2 315.0,142.2 H331.0 Q335.0,142.2 335.0,146.2 V184.0 Z"/></g><text x="323.0" y="202" text-anchor="middle" class="t-mut">jun</text></svg></div></div>
+  <h3>Flete por tonelada (MXN/t)</h3>
+  <p class="note">Cada celda es un mes y una planta. Los valores están en un rango muy estrecho, así que el color sirve para ubicar los extremos: lee siempre la cifra de la celda y la escala de abajo (de menor a mayor).</p>
+  <div class="heat"><table class="hm" aria-label="Flete por tonelada por planta y mes, entre $582 y $624"><thead><tr><th></th><th scope="col">ene</th><th scope="col">feb</th><th scope="col">mar</th><th scope="col">abr</th><th scope="col">may</th><th scope="col">jun</th></tr></thead><tbody><tr><th scope="row">Planta Monterrey</th><td><div class="hm-cell bq3 mark" tabindex="0" data-tip="Planta Monterrey · ene 2026
+Flete por tonelada|$602.34
+Toneladas|3,089.4 t
+Viajes|112">$602</div></td><td><div class="hm-cell bq3 mark" tabindex="0" data-tip="Planta Monterrey · feb 2026
+Flete por tonelada|$604.54
+Toneladas|2,480.7 t
+Viajes|92">$605</div></td><td><div class="hm-cell bq2 mark" tabindex="0" data-tip="Planta Monterrey · mar 2026
+Flete por tonelada|$594.38
+Toneladas|3,507.1 t
+Viajes|126">$594</div></td><td><div class="hm-cell bq5 mark" tabindex="0" data-tip="Planta Monterrey · abr 2026
+Flete por tonelada|$617.49
+Toneladas|2,446.6 t
+Viajes|85">$617</div></td><td><div class="hm-cell bq1 mark" tabindex="0" data-tip="Planta Monterrey · may 2026
+Flete por tonelada|$590.14
+Toneladas|3,290.3 t
+Viajes|114">$590</div></td><td><div class="hm-cell bq2 mark" tabindex="0" data-tip="Planta Monterrey · jun 2026
+Flete por tonelada|$594.33
+Toneladas|3,019.8 t
+Viajes|108">$594</div></td></tr><tr><th scope="row">Planta Celaya</th><td><div class="hm-cell bq4 mark" tabindex="0" data-tip="Planta Celaya · ene 2026
+Flete por tonelada|$608.27
+Toneladas|2,205.0 t
+Viajes|80">$608</div></td><td><div class="hm-cell bq3 mark" tabindex="0" data-tip="Planta Celaya · feb 2026
+Flete por tonelada|$600.68
+Toneladas|2,200.5 t
+Viajes|80">$601</div></td><td><div class="hm-cell bq6 mark" tabindex="0" data-tip="Planta Celaya · mar 2026
+Flete por tonelada|$619.18
+Toneladas|2,314.8 t
+Viajes|84">$619</div></td><td><div class="hm-cell bq4 mark" tabindex="0" data-tip="Planta Celaya · abr 2026
+Flete por tonelada|$609.68
+Toneladas|1,997.8 t
+Viajes|71">$610</div></td><td><div class="hm-cell bq4 mark" tabindex="0" data-tip="Planta Celaya · may 2026
+Flete por tonelada|$609.46
+Toneladas|2,305.8 t
+Viajes|83">$609</div></td><td><div class="hm-cell bq3 mark" tabindex="0" data-tip="Planta Celaya · jun 2026
+Flete por tonelada|$605.16
+Toneladas|2,302.2 t
+Viajes|82">$605</div></td></tr><tr><th scope="row">Planta Saltillo</th><td><div class="hm-cell bq4 mark" tabindex="0" data-tip="Planta Saltillo · ene 2026
+Flete por tonelada|$606.76
+Toneladas|2,063.2 t
+Viajes|73">$607</div></td><td><div class="hm-cell bq2 mark" tabindex="0" data-tip="Planta Saltillo · feb 2026
+Flete por tonelada|$599.10
+Toneladas|1,713.4 t
+Viajes|61">$599</div></td><td><div class="hm-cell bq0 mark" tabindex="0" data-tip="Planta Saltillo · mar 2026
+Flete por tonelada|$586.31
+Toneladas|1,552.0 t
+Viajes|55">$586</div></td><td><div class="hm-cell bq6 mark" tabindex="0" data-tip="Planta Saltillo · abr 2026
+Flete por tonelada|$623.03
+Toneladas|1,133.3 t
+Viajes|41">$623</div></td><td><div class="hm-cell bq5 mark" tabindex="0" data-tip="Planta Saltillo · may 2026
+Flete por tonelada|$613.05
+Toneladas|1,634.6 t
+Viajes|58">$613</div></td><td><div class="hm-cell bq1 mark" tabindex="0" data-tip="Planta Saltillo · jun 2026
+Flete por tonelada|$592.84
+Toneladas|1,646.7 t
+Viajes|59">$593</div></td></tr><tr><th scope="row">Planta Houston</th><td><div class="hm-cell bq5 mark" tabindex="0" data-tip="Planta Houston · ene 2026
+Flete por tonelada|$614.54
+Toneladas|995.6 t
+Viajes|37">$615</div></td><td><div class="hm-cell bq0 mark" tabindex="0" data-tip="Planta Houston · feb 2026
+Flete por tonelada|$581.65
+Toneladas|1,247.2 t
+Viajes|45">$582</div></td><td><div class="hm-cell bq4 mark" tabindex="0" data-tip="Planta Houston · mar 2026
+Flete por tonelada|$606.39
+Toneladas|898.4 t
+Viajes|31">$606</div></td><td><div class="hm-cell bq2 mark" tabindex="0" data-tip="Planta Houston · abr 2026
+Flete por tonelada|$599.35
+Toneladas|893.1 t
+Viajes|33">$599</div></td><td><div class="hm-cell bq6 mark" tabindex="0" data-tip="Planta Houston · may 2026
+Flete por tonelada|$624.47
+Toneladas|1,025.2 t
+Viajes|37">$624</div></td><td><div class="hm-cell bq4 mark" tabindex="0" data-tip="Planta Houston · jun 2026
+Flete por tonelada|$607.82
+Toneladas|1,128.9 t
+Viajes|42">$608</div></td></tr></tbody></table></div>
+  <div class="scale" aria-label="Escala de color, de menor a mayor"><span class="sc-lab">$582/t</span><span class="sc-bar"><span class="sc-step bq0"></span><span class="sc-step bq1"></span><span class="sc-step bq2"></span><span class="sc-step bq3"></span><span class="sc-step bq4"></span><span class="sc-step bq5"></span><span class="sc-step bq6"></span></span><span class="sc-lab">$624/t</span></div>
+  <details class="twin"><summary>Ver la tabla embarques_mensual (24 filas)</summary><div class="tbl-wrap"><table><thead><tr><th>Mes</th><th>Planta</th><th>Viajes</th><th>Toneladas</th><th>Flete MXN</th><th>Flete por t</th></tr></thead><tbody><tr><td class="">2026-01</td><td class="">Planta Monterrey</td><td class="num">112</td><td class="num">3,089.4</td><td class="num">1,860,871.81</td><td class="num">602.34</td></tr><tr><td class="">2026-01</td><td class="">Planta Celaya</td><td class="num">80</td><td class="num">2,205.0</td><td class="num">1,341,196.71</td><td class="num">608.27</td></tr><tr><td class="">2026-01</td><td class="">Planta Saltillo</td><td class="num">73</td><td class="num">2,063.2</td><td class="num">1,251,887.92</td><td class="num">606.76</td></tr><tr><td class="">2026-01</td><td class="">Planta Houston</td><td class="num">37</td><td class="num">995.6</td><td class="num">611,825.14</td><td class="num">614.54</td></tr><tr><td class="">2026-02</td><td class="">Planta Monterrey</td><td class="num">92</td><td class="num">2,480.7</td><td class="num">1,499,663.63</td><td class="num">604.54</td></tr><tr><td class="">2026-02</td><td class="">Planta Celaya</td><td class="num">80</td><td class="num">2,200.5</td><td class="num">1,321,797.32</td><td class="num">600.68</td></tr><tr><td class="">2026-02</td><td class="">Planta Saltillo</td><td class="num">61</td><td class="num">1,713.4</td><td class="num">1,026,474.93</td><td class="num">599.10</td></tr><tr><td class="">2026-02</td><td class="">Planta Houston</td><td class="num">45</td><td class="num">1,247.2</td><td class="num">725,447.67</td><td class="num">581.65</td></tr><tr><td class="">2026-03</td><td class="">Planta Monterrey</td><td class="num">126</td><td class="num">3,507.1</td><td class="num">2,084,530.98</td><td class="num">594.38</td></tr><tr><td class="">2026-03</td><td class="">Planta Celaya</td><td class="num">84</td><td class="num">2,314.8</td><td class="num">1,433,263.97</td><td class="num">619.18</td></tr><tr><td class="">2026-03</td><td class="">Planta Saltillo</td><td class="num">55</td><td class="num">1,552.0</td><td class="num">909,943.44</td><td class="num">586.31</td></tr><tr><td class="">2026-03</td><td class="">Planta Houston</td><td class="num">31</td><td class="num">898.4</td><td class="num">544,751.60</td><td class="num">606.39</td></tr><tr><td class="">2026-04</td><td class="">Planta Monterrey</td><td class="num">85</td><td class="num">2,446.6</td><td class="num">1,510,765.00</td><td class="num">617.49</td></tr><tr><td class="">2026-04</td><td class="">Planta Celaya</td><td class="num">71</td><td class="num">1,997.8</td><td class="num">1,218,025.06</td><td class="num">609.68</td></tr><tr><td class="">2026-04</td><td class="">Planta Saltillo</td><td class="num">41</td><td class="num">1,133.3</td><td class="num">706,113.98</td><td class="num">623.03</td></tr><tr><td class="">2026-04</td><td class="">Planta Houston</td><td class="num">33</td><td class="num">893.1</td><td class="num">535,295.19</td><td class="num">599.35</td></tr><tr><td class="">2026-05</td><td class="">Planta Monterrey</td><td class="num">114</td><td class="num">3,290.3</td><td class="num">1,941,755.65</td><td class="num">590.14</td></tr><tr><td class="">2026-05</td><td class="">Planta Celaya</td><td class="num">83</td><td class="num">2,305.8</td><td class="num">1,405,281.76</td><td class="num">609.46</td></tr><tr><td class="">2026-05</td><td class="">Planta Saltillo</td><td class="num">58</td><td class="num">1,634.6</td><td class="num">1,002,064.30</td><td class="num">613.05</td></tr><tr><td class="">2026-05</td><td class="">Planta Houston</td><td class="num">37</td><td class="num">1,025.2</td><td class="num">640,207.10</td><td class="num">624.47</td></tr><tr><td class="">2026-06</td><td class="">Planta Monterrey</td><td class="num">108</td><td class="num">3,019.8</td><td class="num">1,794,784.00</td><td class="num">594.33</td></tr><tr><td class="">2026-06</td><td class="">Planta Celaya</td><td class="num">82</td><td class="num">2,302.2</td><td class="num">1,393,195.59</td><td class="num">605.16</td></tr><tr><td class="">2026-06</td><td class="">Planta Saltillo</td><td class="num">59</td><td class="num">1,646.7</td><td class="num">976,247.70</td><td class="num">592.84</td></tr><tr><td class="">2026-06</td><td class="">Planta Houston</td><td class="num">42</td><td class="num">1,128.9</td><td class="num">686,199.36</td><td class="num">607.82</td></tr></tbody></table></div></details>
+</section>
+
+<section class="card" id="cumplimiento">
+  <h2>Cumplimiento de entrega por segmento de cliente</h2>
+  <p class="lead">El cumplimiento global fue 71.8 %; el mejor mes de embarque fue jun 2026 (74.1 %) y el más bajo feb 2026 (68.1 %). Cada recuadro compara un segmento (color) con el total del mes (gris). «No identificado» son clientes que no existen en el maestro: pesa solo 2.2 % de lo entregado, por eso sus meses son muy variables.</p>
+  <div class="legend" aria-label="Leyenda"><span class="lg"><svg width="24" height="8" aria-hidden="true"><line x1="0" x2="24" y1="4" y2="4" class="ln" style="stroke:var(--ink2)"/></svg>Segmento</span>
+  <span class="lg"><svg width="24" height="8" aria-hidden="true"><line x1="0" x2="24" y1="4" y2="4" class="ln-total"/></svg>Total del mes (todos los segmentos)</span>
+  <span class="lg-note">Eje vertical de 50 % a 100 %</span></div>
+  <div class="grid2"><div class="panel"><svg viewBox="0 0 360 214" role="img" aria-label="Porcentaje de toneladas a tiempo por mes, Distribuidor"><text x="48" y="16" class="t-ink t-title">Distribuidor</text><text x="348" y="16" class="t-sec" text-anchor="end">73.5 % en el semestre</text><line x1="48" x2="316" y1="184.0" y2="184.0" class="ax"/><text x="40" y="188.0" text-anchor="end" class="t-mut">50 %</text><line x1="48" x2="316" y1="112.0" y2="112.0" class="gl"/><text x="40" y="116.0" text-anchor="end" class="t-mut">75 %</text><line x1="48" x2="316" y1="40.0" y2="40.0" class="gl"/><text x="40" y="44.0" text-anchor="end" class="t-mut">100 %</text><polyline points="48.0,115.6 101.6,131.7 155.2,123.2 208.8,128.0 262.4,115.5 316.0,114.6" class="ln-total"/><polyline points="48.0,106.4 101.6,140.5 155.2,114.8 208.8,106.4 262.4,116.4 316.0,112.0" class="ln" style="stroke:var(--s1)"/><circle cx="48.0" cy="106.4" r="4" class="dot" style="fill:var(--s1)"/><circle cx="101.6" cy="140.5" r="4" class="dot" style="fill:var(--s1)"/><circle cx="155.2" cy="114.8" r="4" class="dot" style="fill:var(--s1)"/><circle cx="208.8" cy="106.4" r="4" class="dot" style="fill:var(--s1)"/><circle cx="262.4" cy="116.4" r="4" class="dot" style="fill:var(--s1)"/><circle cx="316.0" cy="112.0" r="4" class="dot" style="fill:var(--s1)"/><text x="48.0" y="202" text-anchor="middle" class="t-mut">ene</text><g class="hit" tabindex="0" data-tip="Distribuidor · ene 2026
+Distribuidor|77.0 %
+Toneladas entregadas|2,444.5 t
+Total del mes|73.8 %"><line class="xh" x1="48.0" x2="48.0" y1="40" y2="184"/><rect x="21.2" y="40" width="53.6" height="144" fill="transparent"/></g><text x="101.6" y="202" text-anchor="middle" class="t-mut">feb</text><g class="hit" tabindex="0" data-tip="Distribuidor · feb 2026
+Distribuidor|65.1 %
+Toneladas entregadas|1,951.7 t
+Total del mes|68.1 %"><line class="xh" x1="101.6" x2="101.6" y1="40" y2="184"/><rect x="74.8" y="40" width="53.6" height="144" fill="transparent"/></g><text x="155.2" y="202" text-anchor="middle" class="t-mut">mar</text><g class="hit" tabindex="0" data-tip="Distribuidor · mar 2026
+Distribuidor|74.0 %
+Toneladas entregadas|2,424.4 t
+Total del mes|71.1 %"><line class="xh" x1="155.2" x2="155.2" y1="40" y2="184"/><rect x="128.4" y="40" width="53.6" height="144" fill="transparent"/></g><text x="208.8" y="202" text-anchor="middle" class="t-mut">abr</text><g class="hit" tabindex="0" data-tip="Distribuidor · abr 2026
+Distribuidor|76.9 %
+Toneladas entregadas|1,458.9 t
+Total del mes|69.4 %"><line class="xh" x1="208.8" x2="208.8" y1="40" y2="184"/><rect x="182.0" y="40" width="53.6" height="144" fill="transparent"/></g><text x="262.4" y="202" text-anchor="middle" class="t-mut">may</text><g class="hit" tabindex="0" data-tip="Distribuidor · may 2026
+Distribuidor|73.5 %
+Toneladas entregadas|1,769.4 t
+Total del mes|73.8 %"><line class="xh" x1="262.4" x2="262.4" y1="40" y2="184"/><rect x="235.6" y="40" width="53.6" height="144" fill="transparent"/></g><text x="316.0" y="202" text-anchor="middle" class="t-mut">jun</text><g class="hit" tabindex="0" data-tip="Distribuidor · jun 2026
+Distribuidor|75.0 %
+Toneladas entregadas|1,421.8 t
+Total del mes|74.1 %"><line class="xh" x1="316.0" x2="316.0" y1="40" y2="184"/><rect x="289.2" y="40" width="53.6" height="144" fill="transparent"/></g><text x="325.0" y="116.0" class="t-ink t-val">75.0 %</text></svg></div><div class="panel"><svg viewBox="0 0 360 214" role="img" aria-label="Porcentaje de toneladas a tiempo por mes, Constructora"><text x="48" y="16" class="t-ink t-title">Constructora</text><text x="348" y="16" class="t-sec" text-anchor="end">69.3 % en el semestre</text><line x1="48" x2="316" y1="184.0" y2="184.0" class="ax"/><text x="40" y="188.0" text-anchor="end" class="t-mut">50 %</text><line x1="48" x2="316" y1="112.0" y2="112.0" class="gl"/><text x="40" y="116.0" text-anchor="end" class="t-mut">75 %</text><line x1="48" x2="316" y1="40.0" y2="40.0" class="gl"/><text x="40" y="44.0" text-anchor="end" class="t-mut">100 %</text><polyline points="48.0,115.6 101.6,131.7 155.2,123.2 208.8,128.0 262.4,115.5 316.0,114.6" class="ln-total"/><polyline points="48.0,121.2 101.6,136.9 155.2,130.2 208.8,138.0 262.4,131.4 316.0,114.6" class="ln" style="stroke:var(--s2)"/><circle cx="48.0" cy="121.2" r="4" class="dot" style="fill:var(--s2)"/><circle cx="101.6" cy="136.9" r="4" class="dot" style="fill:var(--s2)"/><circle cx="155.2" cy="130.2" r="4" class="dot" style="fill:var(--s2)"/><circle cx="208.8" cy="138.0" r="4" class="dot" style="fill:var(--s2)"/><circle cx="262.4" cy="131.4" r="4" class="dot" style="fill:var(--s2)"/><circle cx="316.0" cy="114.6" r="4" class="dot" style="fill:var(--s2)"/><text x="48.0" y="202" text-anchor="middle" class="t-mut">ene</text><g class="hit" tabindex="0" data-tip="Constructora · ene 2026
+Constructora|71.8 %
+Toneladas entregadas|2,716.8 t
+Total del mes|73.8 %"><line class="xh" x1="48.0" x2="48.0" y1="40" y2="184"/><rect x="21.2" y="40" width="53.6" height="144" fill="transparent"/></g><text x="101.6" y="202" text-anchor="middle" class="t-mut">feb</text><g class="hit" tabindex="0" data-tip="Constructora · feb 2026
+Constructora|66.4 %
+Toneladas entregadas|2,614.1 t
+Total del mes|68.1 %"><line class="xh" x1="101.6" x2="101.6" y1="40" y2="184"/><rect x="74.8" y="40" width="53.6" height="144" fill="transparent"/></g><text x="155.2" y="202" text-anchor="middle" class="t-mut">mar</text><g class="hit" tabindex="0" data-tip="Constructora · mar 2026
+Constructora|68.7 %
+Toneladas entregadas|2,743.8 t
+Total del mes|71.1 %"><line class="xh" x1="155.2" x2="155.2" y1="40" y2="184"/><rect x="128.4" y="40" width="53.6" height="144" fill="transparent"/></g><text x="208.8" y="202" text-anchor="middle" class="t-mut">abr</text><g class="hit" tabindex="0" data-tip="Constructora · abr 2026
+Constructora|66.0 %
+Toneladas entregadas|2,080.3 t
+Total del mes|69.4 %"><line class="xh" x1="208.8" x2="208.8" y1="40" y2="184"/><rect x="182.0" y="40" width="53.6" height="144" fill="transparent"/></g><text x="262.4" y="202" text-anchor="middle" class="t-mut">may</text><g class="hit" tabindex="0" data-tip="Constructora · may 2026
+Constructora|68.2 %
+Toneladas entregadas|3,264.9 t
+Total del mes|73.8 %"><line class="xh" x1="262.4" x2="262.4" y1="40" y2="184"/><rect x="235.6" y="40" width="53.6" height="144" fill="transparent"/></g><text x="316.0" y="202" text-anchor="middle" class="t-mut">jun</text><g class="hit" tabindex="0" data-tip="Constructora · jun 2026
+Constructora|74.1 %
+Toneladas entregadas|2,667.3 t
+Total del mes|74.1 %"><line class="xh" x1="316.0" x2="316.0" y1="40" y2="184"/><rect x="289.2" y="40" width="53.6" height="144" fill="transparent"/></g><text x="325.0" y="118.6" class="t-ink t-val">74.1 %</text></svg></div><div class="panel"><svg viewBox="0 0 360 214" role="img" aria-label="Porcentaje de toneladas a tiempo por mes, Industrial"><text x="48" y="16" class="t-ink t-title">Industrial</text><text x="348" y="16" class="t-sec" text-anchor="end">72.9 % en el semestre</text><line x1="48" x2="316" y1="184.0" y2="184.0" class="ax"/><text x="40" y="188.0" text-anchor="end" class="t-mut">50 %</text><line x1="48" x2="316" y1="112.0" y2="112.0" class="gl"/><text x="40" y="116.0" text-anchor="end" class="t-mut">75 %</text><line x1="48" x2="316" y1="40.0" y2="40.0" class="gl"/><text x="40" y="44.0" text-anchor="end" class="t-mut">100 %</text><polyline points="48.0,115.6 101.6,131.7 155.2,123.2 208.8,128.0 262.4,115.5 316.0,114.6" class="ln-total"/><polyline points="48.0,120.2 101.6,123.3 155.2,122.5 208.8,131.2 262.4,97.2 316.0,113.9" class="ln" style="stroke:var(--s3)"/><circle cx="48.0" cy="120.2" r="4" class="dot" style="fill:var(--s3)"/><circle cx="101.6" cy="123.3" r="4" class="dot" style="fill:var(--s3)"/><circle cx="155.2" cy="122.5" r="4" class="dot" style="fill:var(--s3)"/><circle cx="208.8" cy="131.2" r="4" class="dot" style="fill:var(--s3)"/><circle cx="262.4" cy="97.2" r="4" class="dot" style="fill:var(--s3)"/><circle cx="316.0" cy="113.9" r="4" class="dot" style="fill:var(--s3)"/><text x="48.0" y="202" text-anchor="middle" class="t-mut">ene</text><g class="hit" tabindex="0" data-tip="Industrial · ene 2026
+Industrial|72.2 %
+Toneladas entregadas|3,100.9 t
+Total del mes|73.8 %"><line class="xh" x1="48.0" x2="48.0" y1="40" y2="184"/><rect x="21.2" y="40" width="53.6" height="144" fill="transparent"/></g><text x="101.6" y="202" text-anchor="middle" class="t-mut">feb</text><g class="hit" tabindex="0" data-tip="Industrial · feb 2026
+Industrial|71.1 %
+Toneladas entregadas|2,863.0 t
+Total del mes|68.1 %"><line class="xh" x1="101.6" x2="101.6" y1="40" y2="184"/><rect x="74.8" y="40" width="53.6" height="144" fill="transparent"/></g><text x="155.2" y="202" text-anchor="middle" class="t-mut">mar</text><g class="hit" tabindex="0" data-tip="Industrial · mar 2026
+Industrial|71.3 %
+Toneladas entregadas|2,921.1 t
+Total del mes|71.1 %"><line class="xh" x1="155.2" x2="155.2" y1="40" y2="184"/><rect x="128.4" y="40" width="53.6" height="144" fill="transparent"/></g><text x="208.8" y="202" text-anchor="middle" class="t-mut">abr</text><g class="hit" tabindex="0" data-tip="Industrial · abr 2026
+Industrial|68.3 %
+Toneladas entregadas|2,737.1 t
+Total del mes|69.4 %"><line class="xh" x1="208.8" x2="208.8" y1="40" y2="184"/><rect x="182.0" y="40" width="53.6" height="144" fill="transparent"/></g><text x="262.4" y="202" text-anchor="middle" class="t-mut">may</text><g class="hit" tabindex="0" data-tip="Industrial · may 2026
+Industrial|80.1 %
+Toneladas entregadas|3,055.5 t
+Total del mes|73.8 %"><line class="xh" x1="262.4" x2="262.4" y1="40" y2="184"/><rect x="235.6" y="40" width="53.6" height="144" fill="transparent"/></g><text x="316.0" y="202" text-anchor="middle" class="t-mut">jun</text><g class="hit" tabindex="0" data-tip="Industrial · jun 2026
+Industrial|74.3 %
+Toneladas entregadas|2,177.0 t
+Total del mes|74.1 %"><line class="xh" x1="316.0" x2="316.0" y1="40" y2="184"/><rect x="289.2" y="40" width="53.6" height="144" fill="transparent"/></g><text x="325.0" y="117.9" class="t-ink t-val">74.3 %</text></svg></div><div class="panel"><svg viewBox="0 0 360 214" role="img" aria-label="Porcentaje de toneladas a tiempo por mes, No identificado"><text x="48" y="16" class="t-ink t-title">No identificado</text><text x="348" y="16" class="t-sec" text-anchor="end">71.5 % en el semestre</text><line x1="48" x2="316" y1="184.0" y2="184.0" class="ax"/><text x="40" y="188.0" text-anchor="end" class="t-mut">50 %</text><line x1="48" x2="316" y1="112.0" y2="112.0" class="gl"/><text x="40" y="116.0" text-anchor="end" class="t-mut">75 %</text><line x1="48" x2="316" y1="40.0" y2="40.0" class="gl"/><text x="40" y="44.0" text-anchor="end" class="t-mut">100 %</text><polyline points="48.0,115.6 101.6,131.7 155.2,123.2 208.8,128.0 262.4,115.5 316.0,114.6" class="ln-total"/><polyline points="48.0,40.0 101.6,102.0 155.2,140.2 208.8,137.5 262.4,128.7 316.0,153.3" class="ln" style="stroke:var(--muted)"/><circle cx="48.0" cy="40.0" r="4" class="dot" style="fill:var(--muted)"/><circle cx="101.6" cy="102.0" r="4" class="dot" style="fill:var(--muted)"/><circle cx="155.2" cy="140.2" r="4" class="dot" style="fill:var(--muted)"/><circle cx="208.8" cy="137.5" r="4" class="dot" style="fill:var(--muted)"/><circle cx="262.4" cy="128.7" r="4" class="dot" style="fill:var(--muted)"/><circle cx="316.0" cy="153.3" r="4" class="dot" style="fill:var(--muted)"/><text x="48.0" y="202" text-anchor="middle" class="t-mut">ene</text><g class="hit" tabindex="0" data-tip="No identificado · ene 2026
+No identificado|100.0 %
+Toneladas entregadas|91.1 t
+Total del mes|73.8 %"><line class="xh" x1="48.0" x2="48.0" y1="40" y2="184"/><rect x="21.2" y="40" width="53.6" height="144" fill="transparent"/></g><text x="101.6" y="202" text-anchor="middle" class="t-mut">feb</text><g class="hit" tabindex="0" data-tip="No identificado · feb 2026
+No identificado|78.5 %
+Toneladas entregadas|213.0 t
+Total del mes|68.1 %"><line class="xh" x1="101.6" x2="101.6" y1="40" y2="184"/><rect x="74.8" y="40" width="53.6" height="144" fill="transparent"/></g><text x="155.2" y="202" text-anchor="middle" class="t-mut">mar</text><g class="hit" tabindex="0" data-tip="No identificado · mar 2026
+No identificado|65.2 %
+Toneladas entregadas|182.9 t
+Total del mes|71.1 %"><line class="xh" x1="155.2" x2="155.2" y1="40" y2="184"/><rect x="128.4" y="40" width="53.6" height="144" fill="transparent"/></g><text x="208.8" y="202" text-anchor="middle" class="t-mut">abr</text><g class="hit" tabindex="0" data-tip="No identificado · abr 2026
+No identificado|66.2 %
+Toneladas entregadas|194.6 t
+Total del mes|69.4 %"><line class="xh" x1="208.8" x2="208.8" y1="40" y2="184"/><rect x="182.0" y="40" width="53.6" height="144" fill="transparent"/></g><text x="262.4" y="202" text-anchor="middle" class="t-mut">may</text><g class="hit" tabindex="0" data-tip="No identificado · may 2026
+No identificado|69.2 %
+Toneladas entregadas|166.1 t
+Total del mes|73.8 %"><line class="xh" x1="262.4" x2="262.4" y1="40" y2="184"/><rect x="235.6" y="40" width="53.6" height="144" fill="transparent"/></g><text x="316.0" y="202" text-anchor="middle" class="t-mut">jun</text><g class="hit" tabindex="0" data-tip="No identificado · jun 2026
+No identificado|60.6 %
+Toneladas entregadas|135.5 t
+Total del mes|74.1 %"><line class="xh" x1="316.0" x2="316.0" y1="40" y2="184"/><rect x="289.2" y="40" width="53.6" height="144" fill="transparent"/></g><text x="325.0" y="157.3" class="t-ink t-val">60.6 %</text></svg></div></div>
+  <details class="twin"><summary>Ver la tabla cumplimiento_entrega (24 filas)</summary><div class="tbl-wrap"><table><thead><tr><th>Mes</th><th>Segmento</th><th>Toneladas entregadas</th><th>Toneladas a tiempo</th><th>% a tiempo</th></tr></thead><tbody><tr><td class="">2026-01</td><td class="">Constructora</td><td class="num">2,716.8</td><td class="num">1,951.0</td><td class="num">71.82</td></tr><tr><td class="">2026-01</td><td class="">Distribuidor</td><td class="num">2,444.5</td><td class="num">1,881.0</td><td class="num">76.95</td></tr><tr><td class="">2026-01</td><td class="">Industrial</td><td class="num">3,100.9</td><td class="num">2,237.7</td><td class="num">72.16</td></tr><tr><td class="">2026-01</td><td class="">No identificado</td><td class="num">91.1</td><td class="num">91.1</td><td class="num">100.00</td></tr><tr><td class="">2026-02</td><td class="">Constructora</td><td class="num">2,614.1</td><td class="num">1,734.8</td><td class="num">66.36</td></tr><tr><td class="">2026-02</td><td class="">Distribuidor</td><td class="num">1,951.7</td><td class="num">1,270.9</td><td class="num">65.12</td></tr><tr><td class="">2026-02</td><td class="">Industrial</td><td class="num">2,863.0</td><td class="num">2,034.5</td><td class="num">71.06</td></tr><tr><td class="">2026-02</td><td class="">No identificado</td><td class="num">213.0</td><td class="num">167.1</td><td class="num">78.48</td></tr><tr><td class="">2026-03</td><td class="">Constructora</td><td class="num">2,743.8</td><td class="num">1,884.4</td><td class="num">68.68</td></tr><tr><td class="">2026-03</td><td class="">Distribuidor</td><td class="num">2,424.4</td><td class="num">1,794.6</td><td class="num">74.02</td></tr><tr><td class="">2026-03</td><td class="">Industrial</td><td class="num">2,921.1</td><td class="num">2,083.8</td><td class="num">71.34</td></tr><tr><td class="">2026-03</td><td class="">No identificado</td><td class="num">182.9</td><td class="num">119.3</td><td class="num">65.20</td></tr><tr><td class="">2026-04</td><td class="">Constructora</td><td class="num">2,080.3</td><td class="num">1,372.6</td><td class="num">65.98</td></tr><tr><td class="">2026-04</td><td class="">Distribuidor</td><td class="num">1,458.9</td><td class="num">1,122.5</td><td class="num">76.94</td></tr><tr><td class="">2026-04</td><td class="">Industrial</td><td class="num">2,737.1</td><td class="num">1,870.0</td><td class="num">68.32</td></tr><tr><td class="">2026-04</td><td class="">No identificado</td><td class="num">194.6</td><td class="num">128.7</td><td class="num">66.16</td></tr><tr><td class="">2026-05</td><td class="">Constructora</td><td class="num">3,264.9</td><td class="num">2,228.3</td><td class="num">68.25</td></tr><tr><td class="">2026-05</td><td class="">Distribuidor</td><td class="num">1,769.4</td><td class="num">1,300.0</td><td class="num">73.47</td></tr><tr><td class="">2026-05</td><td class="">Industrial</td><td class="num">3,055.5</td><td class="num">2,448.5</td><td class="num">80.14</td></tr><tr><td class="">2026-05</td><td class="">No identificado</td><td class="num">166.1</td><td class="num">114.9</td><td class="num">69.21</td></tr><tr><td class="">2026-06</td><td class="">Constructora</td><td class="num">2,667.3</td><td class="num">1,976.5</td><td class="num">74.10</td></tr><tr><td class="">2026-06</td><td class="">Distribuidor</td><td class="num">1,421.8</td><td class="num">1,066.2</td><td class="num">74.99</td></tr><tr><td class="">2026-06</td><td class="">Industrial</td><td class="num">2,177.0</td><td class="num">1,618.7</td><td class="num">74.35</td></tr><tr><td class="">2026-06</td><td class="">No identificado</td><td class="num">135.5</td><td class="num">82.2</td><td class="num">60.65</td></tr></tbody></table></div></details>
+</section>
+
+<section class="card" id="calidad">
+  <h2>Calidad de los datos: qué costó llegar a estas cifras</h2>
+  <p class="lead">Los datos llegan como historia de versiones, con borrados, texto sucio y fechas centinela. Dos vistas del trabajo de limpieza:
+  cuánto se reduce el dato crudo hasta los viajes que cuentan, y cuánto se equivocaría cada indicador si se ignorara cada problema
+  (detalle de los 19 hallazgos en <a href="../HALLAZGOS.md">HALLAZGOS.md</a>).</p>
+  <h3>De la réplica a los viajes que cuentan</h3>
+  <div class="funnel"><div class="fn-row"><div class="fn-lab"><b>Filas replicadas (todas las versiones)</b><span>filas, una por cada versión de un viaje</span></div><div class="fn-track"><span class="fn-bar mark" tabindex="0" style="width:100.0%;background:var(--o0)" data-tip="Filas replicadas (todas las versiones)
+Cantidad|5,584"></span></div><div class="fn-val">5,584</div></div><div class="fn-row"><div class="fn-lab"><b>Viajes únicos</b><span>−3,757 versiones anteriores y copias exactas</span></div><div class="fn-track"><span class="fn-bar mark" tabindex="0" style="width:32.7%;background:var(--o1)" data-tip="Viajes únicos
+Cantidad|1,827"></span></div><div class="fn-val">1,827</div></div><div class="fn-row"><div class="fn-lab"><b>Viajes vigentes</b><span>−19 borrados en el origen</span></div><div class="fn-track"><span class="fn-bar mark" tabindex="0" style="width:32.4%;background:var(--o2)" data-tip="Viajes vigentes
+Cantidad|1,808"></span></div><div class="fn-val">1,808</div></div><div class="fn-row"><div class="fn-lab"><b>Viajes embarcados (TRA o ENT)</b><span>−119 programados (PRO) o cancelados (CAN)</span></div><div class="fn-track"><span class="fn-bar mark" tabindex="0" style="width:30.2%;background:var(--o3)" data-tip="Viajes embarcados (TRA o ENT)
+Cantidad|1,689"></span></div><div class="fn-val">1,689</div></div><div class="fn-row"><div class="fn-lab"><b>Embarcados con comprobante de entrega</b><span>−61 sin POD: no se pueden evaluar</span></div><div class="fn-track"><span class="fn-bar mark" tabindex="0" style="width:29.2%;background:var(--o4)" data-tip="Embarcados con comprobante de entrega
+Cantidad|1,628"></span></div><div class="fn-val">1,628</div></div></div>
+  <h3>Cuánto cambiaría el resultado si se ignorara cada problema</h3>
+  <p class="note">Barra = desviación relativa del indicador afectado (flete, viajes, toneladas o % a tiempo, según el caso). Calculado con <code>tools/analisis_impacto.py</code>.</p>
+  <div class="ranked"><div class="rk-row"><div class="rk-lab"><span class="rk-id">H01</span>No quedarse con la última versión de cada viaje</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:100.0%" data-tip="H01 · No quedarse con la última versión de cada viaje
++114.9 % viajes
+(1,689 → 3,629)"></span></div><div class="rk-val">+114.9 % viajes (1,689 → 3,629)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H08</span>Sumar el flete después de unir con las partidas</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:92.1%" data-tip="H08 · Sumar el flete después de unir con las partidas
++105.8 % flete
+(28.4 → 58.5 M MXN)"></span></div><div class="rk-val">+105.8 % flete (28.4 → 58.5 M MXN)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H11</span>Comparar timestamps en vez de fechas (a tiempo)</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:21.7%" data-tip="H11 · Comparar timestamps en vez de fechas (a tiempo)
+−24.9 % a tiempo
+(71.8 → 53.9 %)"></span></div><div class="rk-val">−24.9 % a tiempo (71.8 → 53.9 %)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H05</span>No limpiar la fecha centinela 1900-01-01</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:11.6%" data-tip="H05 · No limpiar la fecha centinela 1900-01-01
+13.4 % de t
+(6,289 t caen en el mes 1900-01)"></span></div><div class="rk-val">13.4 % de t (6,289 t caen en el mes 1900-01)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H04</span>No normalizar el estatus (ENT, ent, &#x27; ENT&#x27;)</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:10.0%" data-tip="H04 · No normalizar el estatus (ENT, ent, &#x27; ENT&#x27;)
+−11.5 % viajes
+(194 perdidos)"></span></div><div class="rk-val">−11.5 % viajes (194 perdidos)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H14</span>No normalizar el texto del segmento</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:6.3%" data-tip="H14 · No normalizar el texto del segmento
+7.2 % de t
+(3,413 t en una categoría falsa)"></span></div><div class="rk-val">7.2 % de t (3,413 t en una categoría falsa)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H09</span>No filtrar viajes programados y cancelados</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:6.2%" data-tip="H09 · No filtrar viajes programados y cancelados
++7.1 % de t
+(3,338 t que nunca salieron)"></span></div><div class="rk-val">+7.1 % de t (3,338 t que nunca salieron)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H12</span>Usar el segmento actual y no el vigente</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:6.2%" data-tip="H12 · Usar el segmento actual y no el vigente
+7.1 % de t
+(3,336 t en el segmento equivocado)"></span></div><div class="rk-val">7.1 % de t (3,336 t en el segmento equivocado)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H13</span>Descartar clientes que no están en el maestro</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:1.8%" data-tip="H13 · Descartar clientes que no están en el maestro
+−2.1 % de t
+(983 t perdidas)"></span></div><div class="rk-val">−2.1 % de t (983 t perdidas)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H15</span>Usar una versión vieja del costo del flete</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:1.1%" data-tip="H15 · Usar una versión vieja del costo del flete
+1.2 % del flete
+(348 mil MXN)"></span></div><div class="rk-val">1.2 % del flete (348 mil MXN)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H03</span>No excluir los viajes borrados en el origen</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:1.1%" data-tip="H03 · No excluir los viajes borrados en el origen
++1.2 % de t
+(19 viajes que ya no existen)"></span></div><div class="rk-val">+1.2 % de t (19 viajes que ya no existen)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H10</span>Quedarse con la primera versión del POD</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:0.6%" data-tip="H10 · Quedarse con la primera versión del POD
+0.20 % a tiempo
+(11 viajes cambian)"></span></div><div class="rk-val">0.20 % a tiempo (11 viajes cambian)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H07</span>Elegir la fecha final en vez de la real</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:0.6%" data-tip="H07 · Elegir la fecha final en vez de la real
+0.17 % de t
+(82 t en el mes equivocado)"></span></div><div class="rk-val">0.17 % de t (82 t en el mes equivocado)</div></div><div class="rk-row"><div class="rk-lab"><span class="rk-id">H16</span>Usar una versión vieja del peso de las partidas</div><div class="rk-track"><span class="rk-bar mark" tabindex="0" style="width:0.6%" data-tip="H16 · Usar una versión vieja del peso de las partidas
+&lt;0.01 % de t
+(3.1 t)"></span></div><div class="rk-val">&lt;0.01 % de t (3.1 t)</div></div></div>
+  <details class="twin"><summary>Ver la tabla de impacto de los 14 hallazgos principales</summary><div class="tbl-wrap"><table><thead><tr><th>Hallazgo</th><th>Qué pasa si se ignora</th><th>Efecto</th></tr></thead><tbody><tr><td class="">H01</td><td class="">No quedarse con la última versión de cada viaje</td><td class="">+114.9 % viajes (1,689 → 3,629)</td></tr><tr><td class="">H08</td><td class="">Sumar el flete después de unir con las partidas</td><td class="">+105.8 % flete (28.4 → 58.5 M MXN)</td></tr><tr><td class="">H11</td><td class="">Comparar timestamps en vez de fechas (a tiempo)</td><td class="">−24.9 % a tiempo (71.8 → 53.9 %)</td></tr><tr><td class="">H05</td><td class="">No limpiar la fecha centinela 1900-01-01</td><td class="">13.4 % de t (6,289 t caen en el mes 1900-01)</td></tr><tr><td class="">H04</td><td class="">No normalizar el estatus (ENT, ent, &#x27; ENT&#x27;)</td><td class="">−11.5 % viajes (194 perdidos)</td></tr><tr><td class="">H14</td><td class="">No normalizar el texto del segmento</td><td class="">7.2 % de t (3,413 t en una categoría falsa)</td></tr><tr><td class="">H09</td><td class="">No filtrar viajes programados y cancelados</td><td class="">+7.1 % de t (3,338 t que nunca salieron)</td></tr><tr><td class="">H12</td><td class="">Usar el segmento actual y no el vigente</td><td class="">7.1 % de t (3,336 t en el segmento equivocado)</td></tr><tr><td class="">H13</td><td class="">Descartar clientes que no están en el maestro</td><td class="">−2.1 % de t (983 t perdidas)</td></tr><tr><td class="">H15</td><td class="">Usar una versión vieja del costo del flete</td><td class="">1.2 % del flete (348 mil MXN)</td></tr><tr><td class="">H03</td><td class="">No excluir los viajes borrados en el origen</td><td class="">+1.2 % de t (19 viajes que ya no existen)</td></tr><tr><td class="">H10</td><td class="">Quedarse con la primera versión del POD</td><td class="">0.20 % a tiempo (11 viajes cambian)</td></tr><tr><td class="">H07</td><td class="">Elegir la fecha final en vez de la real</td><td class="">0.17 % de t (82 t en el mes equivocado)</td></tr><tr><td class="">H16</td><td class="">Usar una versión vieja del peso de las partidas</td><td class="">&lt;0.01 % de t (3.1 t)</td></tr></tbody></table></div></details>
+  <h3>Toneladas que cambiarían de segmento si se usara el segmento actual</h3>
+  <p class="note">13 clientes cambian de segmento durante el año. Filas: segmento correcto el día del embarque. Columnas: segmento que recibirían con el segmento actual. En total 3,336 t (7.1 % de lo embarcado).</p>
+  <div class="mx" role="table" aria-label="Toneladas que cambiarían de segmento"><div class="mx-corner"></div><div class="mx-colh">Distribuidor</div><div class="mx-colh">Constructora</div><div class="mx-colh">Industrial</div><div class="mx-rowh">Distribuidor</div><div class="mx-cell mx-diag" aria-label="sin cambio">—</div><div class="mx-cell bq6 mark" tabindex="0" data-tip="Segmento correcto: Distribuidor
+Si se usara el actual: Constructora
+Toneladas|1,208.2 t
+Partidas|91"><b>1,208</b><span>t</span></div><div class="mx-cell bq0 mark" tabindex="0" data-tip="Segmento correcto: Distribuidor
+Si se usara el actual: Industrial
+Toneladas|142.9 t
+Partidas|10"><b>143</b><span>t</span></div><div class="mx-rowh">Constructora</div><div class="mx-cell bq0 mark" tabindex="0" data-tip="Segmento correcto: Constructora
+Si se usara el actual: Distribuidor
+Toneladas|240.3 t
+Partidas|18"><b>240</b><span>t</span></div><div class="mx-cell mx-diag" aria-label="sin cambio">—</div><div class="mx-cell bq1 mark" tabindex="0" data-tip="Segmento correcto: Constructora
+Si se usara el actual: Industrial
+Toneladas|331.7 t
+Partidas|24"><b>332</b><span>t</span></div><div class="mx-rowh">Industrial</div><div class="mx-cell bq0 mark" tabindex="0" data-tip="Segmento correcto: Industrial
+Si se usara el actual: Distribuidor
+Toneladas|253.4 t
+Partidas|24"><b>253</b><span>t</span></div><div class="mx-cell bq6 mark" tabindex="0" data-tip="Segmento correcto: Industrial
+Si se usara el actual: Constructora
+Toneladas|1,159.6 t
+Partidas|77"><b>1,160</b><span>t</span></div><div class="mx-cell mx-diag" aria-label="sin cambio">—</div></div>
+</section>
+
+<footer class="foot">
+  <p>Generado por <code>python tools/generar_dashboard.py</code> a partir de <code>deacero.duckdb</code> y <code>reporte/impacto_hallazgos.json</code>; el CI comprueba que este archivo no quede desactualizado.
+  Paleta categórica y secuencial validada con el validador de contraste y daltonismo del skill de visualización (modo claro y oscuro).</p>
+</footer>
+<div id="tip" role="tooltip" hidden></div>
+</div>
+<script>
+(function () {
+  var tip = document.getElementById('tip');
+  function render(raw) {
+    tip.textContent = '';
+    raw.split('\n').forEach(function (line, i) {
+      var row = document.createElement('div');
+      if (i === 0) { row.className = 'tip-h'; row.textContent = line; }
+      else {
+        row.className = 'tip-r';
+        var parts = line.split('|');
+        var a = document.createElement('span'); a.textContent = parts[0];
+        row.appendChild(a);
+        if (parts.length > 1) { var b = document.createElement('b'); b.textContent = parts[1]; row.appendChild(b); }
+      }
+      tip.appendChild(row);
+    });
+  }
+  function place(x, y) {
+    tip.hidden = false;
+    var w = tip.offsetWidth, h = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    var left = x + 14, top = y + 14;
+    if (left + w > vw - 8) left = x - w - 14;
+    if (top + h > vh - 8) top = y - h - 14;
+    tip.style.left = Math.max(8, left) + 'px';
+    tip.style.top = Math.max(8, top) + 'px';
+  }
+  function target(el) { return el && el.closest ? el.closest('[data-tip]') : null; }
+  document.addEventListener('pointermove', function (e) {
+    var t = target(e.target);
+    if (t) { render(t.getAttribute('data-tip')); place(e.clientX, e.clientY); } else { tip.hidden = true; }
+  });
+  document.addEventListener('pointerleave', function () { tip.hidden = true; });
+  document.addEventListener('focusin', function (e) {
+    var t = target(e.target);
+    if (t) { var r = t.getBoundingClientRect(); render(t.getAttribute('data-tip')); place(r.left + r.width / 2, r.top); }
+  });
+  document.addEventListener('focusout', function () { tip.hidden = true; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') tip.hidden = true; });
+
+  var root = document.documentElement, btn = document.getElementById('theme');
+  function efectivo() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  try { var g = localStorage.getItem('tema'); if (g === 'dark' || g === 'light') root.setAttribute('data-theme', g); } catch (err) {}
+  btn.addEventListener('click', function () {
+    var n = efectivo() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', n);
+    try { localStorage.setItem('tema', n); } catch (err) {}
+  });
+})();
+</script>
+</body>
+</html>
